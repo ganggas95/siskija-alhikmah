@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { RouteProgress } from "@/components/app/route-progress";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 
 import "./globals.css";
@@ -68,6 +69,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
+        <RouteProgress />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <div className="pointer-events-none fixed bottom-4 right-4 z-40 hidden lg:block">
           <div className="pointer-events-auto">
