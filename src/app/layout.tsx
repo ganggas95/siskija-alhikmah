@@ -34,12 +34,25 @@ const themeScript = `
 `;
 
 export const metadata: Metadata = {
-  title: "SISKIJA AL-HIKMAH",
+  title: {
+    default: "SISKIJA AL-HIKMAH",
+    template: "%s | SISKIJA AL-HIKMAH",
+  },
   description: "Sistem Informasi Keuangan dan Iuran Jamaah Al-Hikmah",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/site.webmanifest",
+  appleWebApp: {
+    title: "SISKIJA",
+    statusBarStyle: "default",
   },
 };
 

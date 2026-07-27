@@ -1,0 +1,21 @@
+{
+  "name": "SISKIJA AL-HIKMAH",
+  "short_name": "SISKIJA",
+  "description": "Sistem Informasi Keuangan dan Iuran Jamaah Al-Hikmah",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#166534",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
