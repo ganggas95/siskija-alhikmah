@@ -1,0 +1,196 @@
+import { PaymentMethod, PermissionKey } from "@prisma/client";
+import { CreditCard } from "lucide-react";
+import Link from "next/link";
+import { Prisma } from "@prisma/client";
+
+import { PageHeader } from "@/components/app/page-header";
+import { TableFilterModal } from "@/components/table/table-filter-modal";
+import { TablePagination } from "@/components/table/table-pagination";
+import { db } from "@/lib/db";
+import { formatRupiah } from "@/lib/money";
+import { requirePermission } from "@/lib/rbac";
+import {
+  getPaginationState,
+  getQueryParam,
+  resolveSearchParams,
+  type SearchParamsInput,
+} from "@/lib/table-query";
+
+export default async function ContributionPaymentsPage({
+  searchParams,
+}: {
+  searchParams?: SearchParamsInput;
+}) {
+  await requirePermission(PermissionKey.MANAGE_CONTRIBUTIONS);
+  const resolvedSearchParams = await resolveSearchParams(searchParams);
+  const query = getQueryParam(resolvedSearchParams, "q");
+  const methodFilter = getQueryParam(resolvedSearchParams, "method");
+  const yearFilter = getQueryParam(resolvedSearchParams, "year");
+  const monthFilter = getQueryParam(resolvedSearchParams, "month");
+  const { page, skip, take, pageSize } = getPaginationState(resolvedSearchParams);
+  const activeFilterCount = [methodFilter, yearFilter, monthFilter].filter(Boolean).length;
+  const andFilters: Prisma.ContributionPaymentWhereInput[] = [];
+
+  if (methodFilter) {
+    andFilters.push({ method: methodFilter as PaymentMethod });
+  }
+  if (yearFilter) {
+    andFilters.push({ bill: { year: Number(yearFilter) } });
+  }
+  if (monthFilter) {
+    andFilters.push({ bill: { month: Number(monthFilter) } });
+  }
+
+  const paymentWhere: Prisma.ContributionPaymentWhereInput = {
+    ...(query
+      ? {
+          OR: [
+            { receiptNumber: { contains: query, mode: "insensitive" } },
+            { bill: { household: { headName: { contains: query, mode: "insensitive" } } } },
+            { bill: { household: { code: { contains: query, mode: "insensitive" } } } },
+          ],
+        }
+      : {}),
+    ...(andFilters.length ? { AND: andFilters } : {}),
+  };
+
+  const [payments, totalPayments] = await Promise.all([
+    db.contributionPayment.findMany({
+      where: paymentWhere,
+      include: {
+        bill: {
+          include: { household: true },
+        },
+      },
+      orderBy: { paymentDate: "desc" },
+      skip,
+      take,
+    }),
+    db.contributionPayment.count({
+      where: paymentWhere,
+    }),
+  ]);
+
+  return (
+    <section className="space-y-6">
+      <PageHeader
+        title="Pembayaran Iuran"
+        description="Catat pembayaran iuran dan sinkronkan otomatis ke kas masuk serta ledger."
+        icon={CreditCard}
+      />
+      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="mb-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="text-lg font-semibold text-slate-900">Riwayat Pembayaran</h3>
+              <Link
+                href="/iuran/pembayaran/tambah"
+                className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
+              >
+                Input Pembayaran
+              </Link>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <form className="grid flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <input
+                  name="q"
+                  defaultValue={query}
+                  placeholder="Cari nama, kode, atau nomor bukti"
+                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                />
+                {methodFilter ? <input type="hidden" name="method" value={methodFilter} /> : null}
+                {yearFilter ? <input type="hidden" name="year" value={yearFilter} /> : null}
+                {monthFilter ? <input type="hidden" name="month" value={monthFilter} /> : null}
+                <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+                  Cari
+                </button>
+              </form>
+              <div className="flex gap-3">
+                <TableFilterModal
+                  title="Filter Pembayaran"
+                  description="Atur metode dan periode pembayaran yang ingin ditampilkan."
+                  activeCount={activeFilterCount}
+                >
+                  {query ? <input type="hidden" name="q" value={query} /> : null}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Metode Pembayaran</label>
+                    <select
+                      name="method"
+                      defaultValue={methodFilter || "all"}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                    >
+                      <option value="all">Semua metode</option>
+                      {Object.values(PaymentMethod).map((method) => (
+                        <option key={method} value={method}>
+                          {method}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Tahun</label>
+                      <input
+                        name="year"
+                        type="number"
+                        defaultValue={yearFilter}
+                        placeholder="Tahun"
+                        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Bulan</label>
+                      <input
+                        name="month"
+                        type="number"
+                        min={1}
+                        max={12}
+                        defaultValue={monthFilter}
+                        placeholder="Bulan"
+                        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+                </TableFilterModal>
+                <Link href="/iuran/pembayaran" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
+                  Reset
+                </Link>
+              </div>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-slate-200 text-slate-500">
+                <tr>
+                  <th className="px-3 py-3">Tanggal</th>
+                  <th className="px-3 py-3">Jamaah</th>
+                  <th className="px-3 py-3">Metode</th>
+                  <th className="px-3 py-3 text-right">Nominal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="border-b border-slate-100">
+                    <td className="px-3 py-3">{payment.paymentDate.toLocaleDateString("id-ID")}</td>
+                    <td className="px-3 py-3">
+                      <p className="font-medium text-slate-900">{payment.bill.household.headName}</p>
+                      <p className="text-slate-500">{payment.receiptNumber}</p>
+                    </td>
+                    <td className="px-3 py-3">{payment.method}</td>
+                    <td className="px-3 py-3 text-right">{formatRupiah(payment.amountPaid.toString())}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <TablePagination
+            pathname="/iuran/pembayaran"
+            searchParams={resolvedSearchParams}
+            totalItems={totalPayments}
+            page={page}
+            pageSize={pageSize}
+            itemLabel="pembayaran"
+          />
+      </div>
+    </section>
+  );
+}

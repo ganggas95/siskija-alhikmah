@@ -1,0 +1,362 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppRoleKey {
+  ADMIN
+  TREASURER
+  AUDITOR
+}
+
+enum PermissionKey {
+  MANAGE_USERS
+  MANAGE_SETTINGS
+  MANAGE_REGIONS
+  MANAGE_HOUSEHOLDS
+  MANAGE_CONTRIBUTIONS
+  MANAGE_INCOME
+  MANAGE_EXPENSES
+  VERIFY_TRANSACTIONS
+  VIEW_REPORTS
+  VIEW_AUDIT_LOG
+}
+
+enum HouseholdStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  QRIS
+  OTHER
+}
+
+enum BillStatus {
+  BELUM_BAYAR
+  SEBAGIAN
+  LUNAS
+  DIBEBASKAN
+  DIBATALKAN
+}
+
+enum IncomeStatus {
+  DRAFT
+  VERIFIED
+  CANCELED
+}
+
+enum ExpenseStatus {
+  DRAFT
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+  CANCELED
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+enum LedgerDirection {
+  DEBIT
+  CREDIT
+}
+
+enum LedgerSourceType {
+  CONTRIBUTION_PAYMENT
+  INCOME_TRANSACTION
+  EXPENSE_TRANSACTION
+  REVERSAL
+}
+
+model User {
+  id              String          @id @default(cuid())
+  name            String
+  email           String          @unique
+  passwordHash    String
+  isActive        Boolean         @default(true)
+  userRoles       UserRole[]
+  createdHouseholds Household[]   @relation("HouseholdCreatedBy")
+  updatedHouseholds Household[]   @relation("HouseholdUpdatedBy")
+  createdIncomeTransactions IncomeTransaction[] @relation("IncomeCreatedBy")
+  verifiedIncomeTransactions IncomeTransaction[] @relation("IncomeVerifiedBy")
+  createdExpenseTransactions ExpenseTransaction[] @relation("ExpenseCreatedBy")
+  verifiedExpenseTransactions ExpenseTransaction[] @relation("ExpenseVerifiedBy")
+  createdContributionPayments ContributionPayment[]
+  audits          AuditLog[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  key         AppRoleKey       @unique
+  name        String
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id    String           @id @default(cuid())
+  key   PermissionKey    @unique
+  name  String
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}
+
+model MosqueProfile {
+  id                     String   @id @default(cuid())
+  name                   String
+  address                String?
+  rt                     String?
+  rw                     String?
+  region                 String?
+  contactNumber          String?
+  chairmanName           String?
+  treasurerName          String?
+  logoUrl                String?
+  defaultContributionFee Decimal  @db.Decimal(18, 2)
+  currencyCode           String   @default("IDR")
+  fiscalYear             Int      @default(2026)
+  receiptText            String?
+  requireExpenseApproval Boolean  @default(true)
+  attachmentMaxSizeMb    Int      @default(5)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model Region {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  isActive    Boolean     @default(true)
+  households  Household[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+}
+
+model Household {
+  id                   String                @id @default(cuid())
+  code                 String                @unique
+  headName             String
+  address              String?
+  rt                   String?
+  rw                   String?
+  isDisabled           Boolean               @default(false)
+  isElderly            Boolean               @default(false)
+  status               HouseholdStatus       @default(ACTIVE)
+  startedAt            DateTime              @default(now())
+  notes                String?
+  regionId             String?
+  createdById          String?
+  updatedById          String?
+  region               Region?               @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  createdBy            User?                 @relation("HouseholdCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy            User?                 @relation("HouseholdUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  contributionBills    ContributionBill[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  deletedAt            DateTime?
+
+  @@index([headName])
+  @@index([regionId])
+  @@index([status])
+}
+
+model ContributionSetting {
+  id             String   @id @default(cuid())
+  defaultAmount  Decimal  @db.Decimal(18, 2)
+  effectiveFrom  DateTime
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ContributionBill {
+  id               String                @id @default(cuid())
+  householdId      String
+  year             Int
+  month            Int
+  amountDue        Decimal               @db.Decimal(18, 2)
+  status           BillStatus            @default(BELUM_BAYAR)
+  notes            String?
+  household        Household             @relation(fields: [householdId], references: [id], onDelete: Restrict)
+  payments         ContributionPayment[]
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  canceledAt       DateTime?
+
+  @@unique([householdId, year, month])
+  @@index([year, month])
+  @@index([status])
+}
+
+model ContributionPayment {
+  id                  String             @id @default(cuid())
+  billId              String
+  amountPaid          Decimal            @db.Decimal(18, 2)
+  paymentDate         DateTime
+  method              PaymentMethod
+  receiptNumber       String             @unique
+  notes               String?
+  recordedById        String?
+  incomeTransactionId String?            @unique
+  bill                ContributionBill   @relation(fields: [billId], references: [id], onDelete: Restrict)
+  recordedBy          User?              @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  incomeTransaction   IncomeTransaction? @relation(fields: [incomeTransactionId], references: [id], onDelete: SetNull)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  canceledAt          DateTime?
+
+  @@index([paymentDate])
+}
+
+model TransactionCategory {
+  id          String       @id @default(cuid())
+  name        String
+  type        CategoryType
+  description String?
+  isActive    Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  incomes     IncomeTransaction[]
+  expenses    ExpenseTransaction[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([name, type])
+}
+
+model IncomeTransaction {
+  id                  String                @id @default(cuid())
+  transactionNumber   String                @unique
+  transactionDate     DateTime
+  categoryId          String
+  sourceName          String
+  amount              Decimal               @db.Decimal(18, 2)
+  method              PaymentMethod
+  description         String?
+  referenceNumber     String?
+  status              IncomeStatus          @default(DRAFT)
+  createdById         String?
+  verifiedById        String?
+  category            TransactionCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy           User?                 @relation("IncomeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  verifiedBy          User?                 @relation("IncomeVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  contributionPayment ContributionPayment?
+  ledgerEntries       CashLedger[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  canceledAt          DateTime?
+
+  @@index([status, transactionDate])
+}
+
+model ExpenseTransaction {
+  id                String               @id @default(cuid())
+  transactionNumber String               @unique
+  transactionDate   DateTime
+  categoryId        String
+  payeeName         String
+  amount            Decimal              @db.Decimal(18, 2)
+  method            PaymentMethod
+  description       String?
+  referenceNumber   String?
+  status            ExpenseStatus        @default(DRAFT)
+  rejectionReason   String?
+  cancellationReason String?
+  createdById       String?
+  verifiedById      String?
+  category          TransactionCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy         User?                @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  verifiedBy        User?                @relation("ExpenseVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  ledgerEntries     CashLedger[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  canceledAt        DateTime?
+
+  @@index([status, transactionDate])
+}
+
+model CashLedger {
+  id                String            @id @default(cuid())
+  transactionDate   DateTime
+  direction         LedgerDirection
+  sourceType        LedgerSourceType
+  sourceId          String
+  transactionNumber String
+  description       String
+  amount            Decimal           @db.Decimal(18, 2)
+  isActive          Boolean           @default(true)
+  incomeId          String?
+  expenseId         String?
+  incomeTransaction IncomeTransaction? @relation(fields: [incomeId], references: [id], onDelete: SetNull)
+  expenseTransaction ExpenseTransaction? @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+
+  @@index([transactionDate])
+  @@unique([sourceType, sourceId, isActive])
+}
+
+model Attachment {
+  id               String   @id @default(cuid())
+  fileName         String
+  fileUrl          String
+  mimeType         String
+  sizeBytes        Int
+  createdAt        DateTime @default(now())
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  action       String
+  entity       String
+  entityId     String
+  beforeData   Json?
+  afterData    Json?
+  ipAddress    String?
+  userAgent    String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
