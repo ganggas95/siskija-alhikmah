@@ -20,7 +20,7 @@ export function LoginForm() {
             id="email"
             name="email"
             type="email"
-            placeholder="bendahara@sismata.local"
+            placeholder="contoh@email.com"
             className="w-full rounded-xl border border-slate-300 py-3 pl-11 pr-4 text-sm outline-none ring-0 transition focus:border-green-700"
             required
           />

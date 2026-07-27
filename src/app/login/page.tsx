@@ -30,17 +30,8 @@ export default async function LoginPage() {
           <h1 className="text-2xl font-semibold text-slate-900">
             Login Pengelola Masjid
           </h1>
-          <p className="text-sm text-slate-600">
-            Gunakan akun demo hasil seed untuk masuk ke dashboard.
-          </p>
         </div>
         <LoginForm />
-        <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-          <p className="font-medium text-slate-900">Akun demo</p>
-          <p>`admin@sismata.local` / `Password123!`</p>
-          <p>`bendahara@sismata.local` / `Password123!`</p>
-          <p>`auditor@sismata.local` / `Password123!`</p>
-        </div>
         <p className="mt-6 text-center text-sm text-slate-500">
           Kembali ke <Link href="/" className="font-medium text-green-800">beranda</Link>
         </p>
