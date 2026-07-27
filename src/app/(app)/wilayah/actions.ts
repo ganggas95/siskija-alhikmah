@@ -30,7 +30,7 @@ export async function createRegionAction(formData: FormData) {
   });
 
   revalidatePath("/wilayah");
-  redirect(getRedirectTo(formData, "/wilayah"));
+  redirect(getRedirectTo(formData, "/wilayah/tambah"));
 }
 
 export async function updateRegionAction(formData: FormData) {

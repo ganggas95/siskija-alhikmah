@@ -79,7 +79,7 @@ export async function createUserAction(formData: FormData) {
   });
 
   revalidatePath("/data-user");
-  redirect(getRedirectTo(formData, "/data-user"));
+  redirect(getRedirectTo(formData, "/data-user/tambah"));
 }
 
 export async function updateUserAction(formData: FormData) {

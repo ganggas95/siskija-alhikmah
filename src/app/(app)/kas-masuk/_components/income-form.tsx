@@ -32,7 +32,7 @@ export function IncomeForm({
   action,
   mode,
   categories,
-  redirectTo = "/kas-masuk",
+  redirectTo = mode === "create" ? "/kas-masuk/tambah" : "/kas-masuk",
   defaultValues,
 }: IncomeFormProps) {
   return (

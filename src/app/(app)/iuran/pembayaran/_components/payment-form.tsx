@@ -28,7 +28,7 @@ function toDateInputValue(value: Date) {
 export function PaymentForm({
   action,
   bills,
-  redirectTo = "/iuran/pembayaran",
+  redirectTo = "/iuran/pembayaran/tambah",
 }: PaymentFormProps) {
   return (
     <form

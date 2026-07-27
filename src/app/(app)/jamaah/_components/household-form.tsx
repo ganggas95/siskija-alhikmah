@@ -30,7 +30,7 @@ export function HouseholdForm({
   action,
   mode,
   regions,
-  redirectTo = "/jamaah",
+  redirectTo = mode === "create" ? "/jamaah/tambah" : "/jamaah",
   defaultValues,
 }: HouseholdFormProps) {
   return (

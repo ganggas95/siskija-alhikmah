@@ -45,7 +45,7 @@ export async function createHouseholdAction(formData: FormData) {
   });
 
   revalidatePath("/jamaah");
-  redirect(getRedirectTo(formData, "/jamaah"));
+  redirect(getRedirectTo(formData, "/jamaah/tambah"));
 }
 
 export async function updateHouseholdAction(formData: FormData) {

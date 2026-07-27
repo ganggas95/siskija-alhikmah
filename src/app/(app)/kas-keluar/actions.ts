@@ -46,7 +46,7 @@ export async function createExpenseAction(formData: FormData) {
   }
 
   revalidateExpensePaths();
-  redirect(getRedirectTo(formData, "/kas-keluar"));
+  redirect(getRedirectTo(formData, "/kas-keluar/tambah"));
 }
 
 export async function updateExpenseAction(formData: FormData) {

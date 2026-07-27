@@ -27,5 +27,5 @@ export async function recordPaymentAction(formData: FormData) {
   revalidatePath("/iuran/pembayaran");
   revalidatePath("/dashboard");
   revalidatePath("/buku-kas");
-  redirect(getRedirectTo(formData, "/iuran/pembayaran"));
+  redirect(getRedirectTo(formData, "/iuran/pembayaran/tambah"));
 }

@@ -32,7 +32,7 @@ export function ExpenseForm({
   action,
   mode,
   categories,
-  redirectTo = "/kas-keluar",
+  redirectTo = mode === "create" ? "/kas-keluar/tambah" : "/kas-keluar",
   defaultValues,
 }: ExpenseFormProps) {
   return (

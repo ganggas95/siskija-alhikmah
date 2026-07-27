@@ -15,7 +15,7 @@ type RegionFormProps = {
 export function RegionForm({
   action,
   mode,
-  redirectTo = "/wilayah",
+  redirectTo = mode === "create" ? "/wilayah/tambah" : "/wilayah",
   defaultValues,
 }: RegionFormProps) {
   return (

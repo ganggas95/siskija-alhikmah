@@ -19,7 +19,7 @@ type UserFormProps = {
 export function UserForm({
   action,
   mode,
-  redirectTo = "/data-user",
+  redirectTo = mode === "create" ? "/data-user/tambah" : "/data-user",
   defaultValues,
 }: UserFormProps) {
   return (

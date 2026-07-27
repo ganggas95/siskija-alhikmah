@@ -46,7 +46,7 @@ export async function createIncomeAction(formData: FormData) {
   }
 
   revalidateIncomePaths();
-  redirect(getRedirectTo(formData, "/kas-masuk"));
+  redirect(getRedirectTo(formData, "/kas-masuk/tambah"));
 }
 
 export async function updateIncomeAction(formData: FormData) {
