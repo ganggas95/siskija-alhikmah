@@ -104,7 +104,51 @@ export default async function LedgerPage({
             </button>
           </form>
         </div>
-        <div className="overflow-x-auto">
+        <div className="space-y-3 md:hidden">
+          {pagedRows.length > 0 ? (
+            pagedRows.map(({ entry, runningBalance }) => (
+              <article key={entry.id} className="rounded-2xl border border-slate-200 p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{entry.transactionNumber}</p>
+                    <p className="text-xs text-slate-500">
+                      {entry.transactionDate.toLocaleDateString("id-ID")}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      entry.direction === LedgerDirection.DEBIT
+                        ? "bg-green-100 text-green-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {entry.direction === LedgerDirection.DEBIT ? "DEBIT" : "KREDIT"}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-slate-600">{entry.description}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-sm">
+                    <span className="text-slate-500">
+                      {entry.direction === LedgerDirection.DEBIT ? "Debit: " : "Kredit: "}
+                    </span>
+                    <span className="font-semibold text-slate-900">
+                      {formatRupiah(entry.amount.toString())}
+                    </span>
+                  </p>
+                  <p className="text-right text-sm">
+                    <span className="text-slate-500">Saldo: </span>
+                    <span className="font-semibold text-slate-900">{formatRupiah(runningBalance)}</span>
+                  </p>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+              Belum ada entry ledger yang cocok.
+            </div>
+          )}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-slate-200 text-slate-500">
               <tr>

@@ -1,21 +1,17 @@
+import { PermissionKey } from "@prisma/client";
+import { LogOut, ShieldUser } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { PermissionKey } from "@prisma/client";
-import {
-  LogOut,
-  ShieldUser,
-} from "lucide-react";
 
 import { signOut } from "@/auth";
+import { MobileSidebarDrawer } from "@/components/app/mobile-sidebar-drawer";
 import { SidebarNav, type SidebarNavGroup } from "@/components/app/sidebar-nav";
 import { requireSession, rolePermissions } from "@/lib/rbac";
 
 const navigationGroups: SidebarNavGroup[] = [
   {
     label: "Dashboard",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
-    ],
+    items: [{ href: "/dashboard", label: "Dashboard", icon: "dashboard" }],
   },
   {
     label: "Master Data",
@@ -102,6 +98,10 @@ const navigationGroups: SidebarNavGroup[] = [
 export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const handleSignOut = async () => {
+    "use server";
+    await signOut({ redirectTo: "/login" });
+  };
   const user = await requireSession();
   const allowedPermissions = new Set(rolePermissions[user.role] ?? []);
   const visibleNavigationGroups = navigationGroups
@@ -115,44 +115,49 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-3">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="flex w-full max-w-none items-center justify-between gap-3 px-4 py-3 lg:mx-auto lg:max-w-7xl lg:py-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <MobileSidebarDrawer
+              groups={visibleNavigationGroups}
+              userName={user.name}
+              userRole={user.role}
+              profileHref="/profil"
+              logoutAction={handleSignOut}
+            />
             <div className="overflow-hidden rounded-2xl bg-white p-1 ring-1 ring-slate-200">
               <Image
                 src="/logo.png"
                 alt="Logo SISKIJA AL-HIKMAH"
-                width={56}
-                height={56}
-                className="h-14 w-14 object-contain"
+                width={48}
+                height={48}
+                className="h-12 w-12 object-contain lg:h-14 lg:w-14"
                 priority
               />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-green-800">SISKIJA AL-HIKMAH</p>
-              <h1 className="text-lg font-semibold text-slate-900">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-green-800">
+                SISKIJA AL-HIKMAH
+              </p>
+              <h1 className="text-[15px] font-semibold leading-tight text-slate-900 lg:text-lg">
                 Sistem Informasi Keuangan dan Iuran Jamaah
               </h1>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+
+          <div className="hidden flex-wrap items-center gap-2 text-sm text-slate-600 lg:flex lg:gap-3">
             <Link
               href="/profil"
-              className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-200"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-200"
             >
               <ShieldUser className="h-4 w-4" />
               {user.name}
             </Link>
-            <span className="rounded-full bg-green-50 px-3 py-1 font-medium text-green-800">
+            <span className="rounded-full bg-green-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-green-800">
               {user.role}
             </span>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <button className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-50">
+            <form action={handleSignOut}>
+              <button className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-50">
                 <LogOut className="h-4 w-4" />
                 Keluar
               </button>
@@ -160,8 +165,8 @@ export default async function AppLayout({
           </div>
         </div>
       </header>
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="rounded-3xl bg-white p-3 shadow-sm ring-1 ring-slate-200 lg:p-4">
+      <div className="grid w-full max-w-none gap-4 px-4 py-4 lg:mx-auto lg:max-w-7xl lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6 lg:py-6">
+        <aside className="hidden rounded-3xl bg-white p-3 shadow-sm ring-1 ring-slate-200 lg:block lg:self-start lg:p-4">
           <SidebarNav groups={visibleNavigationGroups} />
         </aside>
         <main className="space-y-6">{children}</main>

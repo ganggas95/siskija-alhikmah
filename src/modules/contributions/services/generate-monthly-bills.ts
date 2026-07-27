@@ -6,18 +6,11 @@ type GenerateBillsInput = {
   year: number;
   month: number;
   actorId: string;
+  amountNormal: string;
+  amountDiscounted: string;
 };
 
 export async function generateMonthlyBills(input: GenerateBillsInput) {
-  const activeSetting = await db.contributionSetting.findFirst({
-    where: { isActive: true },
-    orderBy: { effectiveFrom: "desc" },
-  });
-
-  if (!activeSetting) {
-    throw new Error("Pengaturan iuran aktif belum tersedia.");
-  }
-
   const households = await db.household.findMany({
     where: {
       status: HouseholdStatus.ACTIVE,
@@ -30,6 +23,11 @@ export async function generateMonthlyBills(input: GenerateBillsInput) {
     let created = 0;
 
     for (const household of households) {
+      const amountDue =
+        household.isDisabled || household.isElderly
+          ? input.amountDiscounted
+          : input.amountNormal;
+
       await tx.contributionBill.upsert({
         where: {
           householdId_year_month: {
@@ -43,7 +41,7 @@ export async function generateMonthlyBills(input: GenerateBillsInput) {
           householdId: household.id,
           year: input.year,
           month: input.month,
-          amountDue: activeSetting.defaultAmount,
+          amountDue,
         },
       });
 

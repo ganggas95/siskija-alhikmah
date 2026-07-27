@@ -21,10 +21,16 @@ export default async function AddContributionPaymentPage() {
     },
     where: {
       canceledAt: null,
+      status: { in: ["BELUM_BAYAR", "SEBAGIAN"] },
     },
     orderBy: [{ year: "desc" }, { month: "desc" }, { household: { code: "asc" } }],
     take: 50,
   });
+
+  const billsFormatted = bills.map((b) => ({
+    ...b,
+    amountDue: b.amountDue.toString(),
+  }));
 
   return (
     <section className="space-y-6">
@@ -34,7 +40,7 @@ export default async function AddContributionPaymentPage() {
         icon={CreditCard}
       />
       <div className="max-w-3xl">
-        <PaymentForm action={recordPaymentAction} bills={bills} />
+        <PaymentForm action={recordPaymentAction} bills={billsFormatted} />
       </div>
     </section>
   );

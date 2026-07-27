@@ -42,6 +42,15 @@ export async function recordContributionPayment(input: RecordPaymentInput) {
     throw new Error("Tagihan tidak ditemukan.");
   }
 
+  const amountPaidDecimal = new Decimal(input.amountPaid);
+  const amountDueDecimal = new Decimal(bill.amountDue.toString());
+
+  if (amountPaidDecimal.lessThan(amountDueDecimal)) {
+    throw new Error(
+      `Nominal dibayar (Rp${new Intl.NumberFormat("id-ID").format(Number(input.amountPaid))}) kurang dari nominal tagihan (Rp${new Intl.NumberFormat("id-ID").format(Number(bill.amountDue))}).`,
+    );
+  }
+
   const incomeCategory = await db.transactionCategory.findUnique({
     where: {
       name_type: {

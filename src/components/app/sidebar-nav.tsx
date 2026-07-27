@@ -73,19 +73,24 @@ function isGroupActive(pathname: string, group: SidebarNavGroup) {
 
 export function SidebarNav({
   groups,
+  onNavigate,
 }: {
   groups: SidebarNavGroup[];
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(
     () =>
       Object.fromEntries(
-        groups.map((group) => [group.label, false]),
+        groups.map((group) => [group.label, !isGroupActive(pathname, group)]),
       ),
   );
 
   return (
-    <nav className="flex gap-3 overflow-x-auto pb-1 lg:block lg:space-y-4 lg:overflow-visible">
+    <nav
+      aria-label="Navigasi modul"
+      className="space-y-3"
+    >
       {groups.map((group) => {
         const collapsed = collapsedGroups[group.label] ?? false;
         const activeGroup = isGroupActive(pathname, group);
@@ -93,7 +98,11 @@ export function SidebarNav({
         return (
           <div
             key={group.label}
-            className="min-w-55 rounded-2xl border border-slate-200 bg-slate-50 p-3 lg:min-w-0"
+            className={`w-full rounded-2xl border p-3 transition ${
+              activeGroup
+                ? "border-green-200 bg-green-50/60"
+                : "border-slate-200 bg-slate-50"
+            }`}
           >
             <button
               type="button"
@@ -121,7 +130,7 @@ export function SidebarNav({
             {!collapsed ? (
               <div
                 id={`submenu-${group.label}`}
-                className="mt-3 flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible"
+                className="mt-3 flex flex-col gap-2"
               >
                 {group.items.map((item) => {
                   const Icon = iconMap[item.icon];
@@ -131,10 +140,11 @@ export function SidebarNav({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`inline-flex min-w-fit items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-medium transition lg:w-full ${
+                      onClick={onNavigate}
+                      className={`inline-flex min-h-11 w-full items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-medium transition ${
                         activeItem
                           ? "border-green-200 bg-green-50 text-green-800"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100 lg:border-transparent"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />

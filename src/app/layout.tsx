@@ -56,7 +56,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <div className="pointer-events-none fixed bottom-4 right-4 z-50">
+        <div className="pointer-events-none fixed bottom-4 right-4 z-40 hidden lg:block">
           <div className="pointer-events-auto">
             <ThemeToggle />
           </div>

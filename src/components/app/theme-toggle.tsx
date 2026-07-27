@@ -48,7 +48,11 @@ function subscribe(onStoreChange: () => void) {
   };
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({
+  className = "",
+}: {
+  className?: string;
+}) {
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const isDark = theme === "dark";
 
@@ -64,7 +68,7 @@ export function ThemeToggle() {
         localStorage.setItem(STORAGE_KEY, nextTheme);
         window.dispatchEvent(new Event(THEME_EVENT));
       }}
-      className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm backdrop-blur transition hover:bg-card-alt"
+      className={`inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm backdrop-blur transition hover:bg-card-alt ${className}`}
     >
       {isDark ? (
         <Sun className="h-4 w-4 text-secondary" />

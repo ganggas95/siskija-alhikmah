@@ -23,7 +23,7 @@ export function UserForm({
   defaultValues,
 }: UserFormProps) {
   return (
-    <form action={action} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <form action={action} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5">
       <input type="hidden" name="redirectTo" value={redirectTo} />
       {defaultValues?.id ? <input type="hidden" name="id" value={defaultValues.id} /> : null}
 

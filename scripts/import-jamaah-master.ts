@@ -199,46 +199,44 @@ async function main() {
 
   const uniqueRegions = [...new Set(preparedRows.map((row) => row.regionName))].sort();
 
-  await prisma.$transaction(async (tx) => {
-    await tx.household.deleteMany();
-    await tx.region.deleteMany();
+  await prisma.household.deleteMany();
+  await prisma.region.deleteMany();
 
-    for (const regionName of uniqueRegions) {
-      await tx.region.create({
-        data: {
-          name: regionName,
+  for (const regionName of uniqueRegions) {
+    await prisma.region.create({
+      data: {
+        name: regionName,
+      },
+    });
+  }
+
+  const regionMap = new Map(
+    (
+      await prisma.region.findMany({
+        where: {
+          name: { in: uniqueRegions },
         },
-      });
-    }
+      })
+    ).map((region) => [region.name, region.id]),
+  );
 
-    const regionMap = new Map(
-      (
-        await tx.region.findMany({
-          where: {
-            name: { in: uniqueRegions },
-          },
-        })
-      ).map((region) => [region.name, region.id]),
-    );
-
-    for (const row of preparedRows) {
-      await tx.household.create({
-        data: {
-          code: row.code,
-          headName: row.headName,
-          rt: row.rt,
-          rw: row.rw,
-          isDisabled: row.isDisabled,
-          isElderly: row.isElderly,
-          status: row.status,
-          notes: row.notes,
-          regionId: regionMap.get(row.regionName),
-          createdById: treasurer?.id,
-          updatedById: treasurer?.id,
-        },
-      });
-    }
-  });
+  for (const row of preparedRows) {
+    await prisma.household.create({
+      data: {
+        code: row.code,
+        headName: row.headName,
+        rt: row.rt,
+        rw: row.rw,
+        isDisabled: row.isDisabled,
+        isElderly: row.isElderly,
+        status: row.status,
+        notes: row.notes,
+        regionId: regionMap.get(row.regionName),
+        createdById: treasurer?.id,
+        updatedById: treasurer?.id,
+      },
+    });
+  }
 
   const duplicateRows = [...duplicateCounter.values()].filter((count) => count > 1);
   const slashNameRows = preparedRows.filter((row) => row.headName.includes("/")).length;

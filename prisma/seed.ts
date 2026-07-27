@@ -113,7 +113,7 @@ async function main() {
       region: "Dusun Tengah",
       chairmanName: "Ahmad Fadhil",
       treasurerName: "Siti Aminah",
-      defaultContributionFee: "50000",
+      defaultContributionFee: "7000",
       fiscalYear: 2026,
     },
   });
@@ -121,12 +121,12 @@ async function main() {
   await prisma.contributionSetting.upsert({
     where: { id: "default-contribution-setting" },
     update: {
-      defaultAmount: "50000",
+      defaultAmount: "7000",
       isActive: true,
     },
     create: {
       id: "default-contribution-setting",
-      defaultAmount: "50000",
+      defaultAmount: "7000",
       effectiveFrom: new Date("2026-01-01T00:00:00.000Z"),
     },
   });

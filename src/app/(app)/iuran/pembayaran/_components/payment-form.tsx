@@ -1,9 +1,12 @@
+"use client";
+
 import { PaymentMethod } from "@prisma/client";
 
 import { FormActions } from "@/components/form/form-actions";
 
 type BillOption = {
   id: string;
+  amountDue: string;
   household: {
     code: string;
     headName: string;
@@ -28,7 +31,23 @@ export function PaymentForm({
   redirectTo = "/iuran/pembayaran",
 }: PaymentFormProps) {
   return (
-    <form action={action} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <form
+      action={action}
+      className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
+      onSubmit={(e) => {
+        const form = e.currentTarget;
+        const billSelect = form.elements.namedItem("billId") as HTMLSelectElement;
+        const amountInput = form.elements.namedItem("amountPaid") as HTMLInputElement;
+        const selected = bills.find((b: BillOption) => b.id === billSelect.value);
+        if (selected && Number(amountInput.value) < Number(selected.amountDue)) {
+          e.preventDefault();
+          amountInput.setCustomValidity(
+            `Nominal dibayar minimal Rp${Number(selected.amountDue).toLocaleString("id-ID")}`,
+          );
+          amountInput.reportValidity();
+        }
+      }}
+    >
       <input type="hidden" name="redirectTo" value={redirectTo} />
 
       <h3 className="text-lg font-semibold text-slate-900">Input Pembayaran</h3>
@@ -37,9 +56,27 @@ export function PaymentForm({
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Tagihan</label>
           <select
+            id="bill-select"
             name="billId"
             className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
             required
+            onChange={(e) => {
+              const select = e.currentTarget;
+              const btn = document.getElementById("bill-amount-btn");
+              const display = document.getElementById("bill-amount-display");
+              const amountInput = document.getElementById("amount-input") as HTMLInputElement;
+              const data = bills.find((b: BillOption) => b.id === select.value);
+              if (btn && data) {
+                btn.classList.remove("hidden");
+              }
+              if (display && data) {
+                display.textContent = `Rp${Number(data.amountDue).toLocaleString("id-ID")}`;
+              }
+              if (amountInput) {
+                amountInput.setCustomValidity("");
+                amountInput.dataset.amountDue = data ? data.amountDue : "";
+              }
+            }}
           >
             <option value="">Pilih tagihan</option>
             {bills.map((bill) => (
@@ -48,16 +85,45 @@ export function PaymentForm({
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            id="bill-amount-btn"
+            className="hidden text-xs text-slate-500 hover:text-emerald-700"
+            onClick={() => {
+              const amountInput = document.getElementById("amount-input") as HTMLInputElement;
+              if (amountInput) {
+                amountInput.value = amountInput.dataset.amountDue ?? "";
+                amountInput.setCustomValidity("");
+              }
+            }}
+          >
+            Isi nominal tagihan: <span id="bill-amount-display" className="font-semibold text-emerald-600">—</span>
+          </button>
         </div>
 
-        <Field
-          label="Tanggal Bayar"
-          name="paymentDate"
-          type="date"
-          required
-          defaultValue={toDateInputValue(new Date())}
-        />
-        <Field label="Nominal Dibayar" name="amountPaid" type="number" required />
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700">Tanggal Bayar</label>
+          <input
+            type="date"
+            name="paymentDate"
+            required
+            defaultValue={toDateInputValue(new Date())}
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700">Nominal Dibayar</label>
+          <input
+            id="amount-input"
+            type="number"
+            name="amountPaid"
+            required
+            min={1}
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            onInput={(e) => (e.currentTarget as HTMLInputElement).setCustomValidity("")}
+          />
+        </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Metode Pembayaran</label>
@@ -90,29 +156,4 @@ export function PaymentForm({
   );
 }
 
-function Field({
-  label,
-  name,
-  type = "text",
-  required = false,
-  defaultValue,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  required?: boolean;
-  defaultValue?: string;
-}) {
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-slate-700">{label}</label>
-      <input
-        type={type}
-        name={name}
-        required={required}
-        defaultValue={defaultValue ?? ""}
-        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-      />
-    </div>
-  );
-}
+
