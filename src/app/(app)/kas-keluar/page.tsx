@@ -16,6 +16,8 @@ import {
   resolveSearchParams,
   type SearchParamsInput,
 } from "@/lib/table-query";
+import { parseSortParam, type SortState } from "@/lib/table-sort";
+import { SortableHeader } from "@/components/table/sortable-header";
 import { verifyExpense } from "@/modules/cash/services/verify-expense";
 
 async function verifyExpenseAction(formData: FormData) {
@@ -44,11 +46,16 @@ export default async function ExpensePage({
   const categoryIdFilter = getQueryParam(resolvedSearchParams, "categoryId");
   const methodFilter = getQueryParam(resolvedSearchParams, "method");
   const { page, skip, take, pageSize } = getPaginationState(resolvedSearchParams);
+  
+  // Parse sort parameter
+  const sortParam = getQueryParam(resolvedSearchParams, "sort");
+  const sort: SortState = parseSortParam(sortParam);
+  
   const activeFilterCount = [
     statusFilter,
     categoryIdFilter,
     methodFilter,
-  ].filter(Boolean).length;
+  ].filter((f) => f && f !== "all").length;
 
   const where: Prisma.ExpenseTransactionWhereInput = {
     ...(query
@@ -60,9 +67,9 @@ export default async function ExpensePage({
           ],
         }
       : {}),
-    ...(statusFilter ? { status: statusFilter as ExpenseStatus } : {}),
-    ...(categoryIdFilter ? { categoryId: categoryIdFilter } : {}),
-    ...(methodFilter ? { method: methodFilter as PaymentMethod } : {}),
+    ...(statusFilter && statusFilter !== "all" ? { status: statusFilter as ExpenseStatus } : {}),
+    ...(categoryIdFilter && categoryIdFilter !== "all" ? { categoryId: categoryIdFilter } : {}),
+    ...(methodFilter && methodFilter !== "all" ? { method: methodFilter as PaymentMethod } : {}),
   };
 
   const [categories, transactions, totalTransactions] = await Promise.all([
@@ -73,7 +80,9 @@ export default async function ExpensePage({
     db.expenseTransaction.findMany({
       where,
       include: { category: true },
-      orderBy: { transactionDate: "desc" },
+      orderBy: sort.column
+        ? { [sort.column]: sort.direction === "asc" ? "asc" : "desc" }
+        : { transactionDate: "desc" },
       skip,
       take,
     }),
@@ -222,20 +231,51 @@ export default async function ExpensePage({
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="px-3 py-3">Nomor</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="transactionNumber"
+                      label="Nomor"
+                      sort={sort}
+                      baseHref="/kas-keluar"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="transactionDate"
+                      label="Tanggal"
+                      sort={sort}
+                      baseHref="/kas-keluar"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
                   <th className="px-3 py-3">Penerima</th>
-                  <th className="px-3 py-3">Status</th>
-                  <th className="px-3 py-3 text-right">Nominal</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="status"
+                      label="Status"
+                      sort={sort}
+                      baseHref="/kas-keluar"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
+                  <th className="px-3 py-3 text-right">
+                    <SortableHeader
+                      column="amount"
+                      label="Nominal"
+                      sort={sort}
+                      baseHref="/kas-keluar"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
                   <th className="px-3 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.map((transaction) => (
                   <tr key={transaction.id} className="border-b border-slate-100 align-top">
-                    <td className="px-3 py-3">
-                      <p className="font-medium text-slate-900">{transaction.transactionNumber}</p>
-                      <p className="text-slate-500">{transaction.transactionDate.toLocaleDateString("id-ID")}</p>
-                    </td>
+                    <td className="px-3 py-3 font-medium text-slate-900">{transaction.transactionNumber}</td>
+                    <td className="px-3 py-3 text-slate-600">{transaction.transactionDate.toLocaleDateString("id-ID")}</td>
                     <td className="px-3 py-3">
                       <p className="font-medium text-slate-900">{transaction.payeeName}</p>
                       <p className="text-slate-500">{transaction.category.name}</p>

@@ -3,10 +3,12 @@ import { ShieldUser } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/app/page-header";
+import { SortableHeader } from "@/components/table/sortable-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
+import { parseSortParam, type SortState } from "@/lib/table-sort";
 import {
   getPaginationState,
   getQueryParam,
@@ -32,6 +34,9 @@ export default async function UserPage({
   const role = getQueryParam(resolvedSearchParams, "role");
   const status = getQueryParam(resolvedSearchParams, "status");
   const { page, skip, take, pageSize } = getPaginationState(resolvedSearchParams);
+
+  const sortParam = getQueryParam(resolvedSearchParams, "sort");
+  const sort: SortState = parseSortParam(sortParam);
 
   const activeFilters = Number(Boolean(role)) + Number(Boolean(status));
 
@@ -81,7 +86,9 @@ export default async function UserPage({
           },
         },
       },
-      orderBy: [{ createdAt: "desc" }, { name: "asc" }],
+      orderBy: sort.column
+        ? { [sort.column]: sort.direction === "asc" ? "asc" : "desc" }
+        : [{ createdAt: "desc" }, { name: "asc" }],
       skip,
       take,
     }),
@@ -167,10 +174,16 @@ export default async function UserPage({
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-slate-200 text-slate-500">
               <tr>
-                <th className="px-3 py-3">Nama</th>
+                <th className="px-3 py-3">
+                  <SortableHeader column="name" label="Nama" sort={sort} baseHref="/data-user" currentSearchParams={resolvedSearchParams} />
+                </th>
                 <th className="px-3 py-3">Role</th>
-                <th className="px-3 py-3">Status</th>
-                <th className="px-3 py-3">Dibuat</th>
+                <th className="px-3 py-3">
+                  <SortableHeader column="isActive" label="Status" sort={sort} baseHref="/data-user" currentSearchParams={resolvedSearchParams} />
+                </th>
+                <th className="px-3 py-3">
+                  <SortableHeader column="createdAt" label="Dibuat" sort={sort} baseHref="/data-user" currentSearchParams={resolvedSearchParams} />
+                </th>
                 <th className="px-3 py-3 text-right">Aksi</th>
               </tr>
             </thead>

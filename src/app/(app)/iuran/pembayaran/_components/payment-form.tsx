@@ -1,8 +1,12 @@
 "use client";
 
 import { PaymentMethod } from "@prisma/client";
+import { useActionState, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 import { FormActions } from "@/components/form/form-actions";
+import { useToast } from "@/components/ui/toast";
+import type { ActionResult } from "@/lib/action-result";
 
 type BillOption = {
   id: string;
@@ -16,7 +20,7 @@ type BillOption = {
 };
 
 type PaymentFormProps = {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<ActionResult>;
   bills: BillOption[];
   redirectTo?: string;
 };
@@ -30,9 +34,29 @@ export function PaymentForm({
   bills,
   redirectTo = "/iuran/pembayaran/tambah",
 }: PaymentFormProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { showToast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [result, formAction] = useActionState(
+    async (_: ActionResult, formData: FormData) => action(formData),
+    null,
+  );
+
+  useEffect(() => {
+    if (!result) return;
+    showToast(result.success ? "success" : "error", result.message);
+    if (!result.success) return;
+    formRef.current?.reset();
+    if (result.redirectTo && result.redirectTo !== pathname) {
+      router.push(result.redirectTo);
+    }
+  }, [pathname, result, router, showToast]);
+
   return (
     <form
-      action={action}
+      ref={formRef}
+      action={formAction}
       className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
       onSubmit={(e) => {
         const form = e.currentTarget;
@@ -155,5 +179,4 @@ export function PaymentForm({
     </form>
   );
 }
-
 

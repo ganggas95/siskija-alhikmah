@@ -33,19 +33,19 @@ export default async function ContributionReportPage({
     statusFilter,
     yearFilter,
     monthFilter,
-  ].filter(Boolean).length;
+  ].filter((f) => f && f !== "all").length;
   const andFilters: Prisma.ContributionBillWhereInput[] = [];
 
-  if (regionIdFilter) {
+  if (regionIdFilter && regionIdFilter !== "all") {
     andFilters.push({ household: { regionId: regionIdFilter } });
   }
-  if (statusFilter) {
+  if (statusFilter && statusFilter !== "all") {
     andFilters.push({ status: statusFilter as BillStatus });
   }
-  if (yearFilter) {
+  if (yearFilter && yearFilter !== "all") {
     andFilters.push({ year: Number(yearFilter) });
   }
-  if (monthFilter) {
+  if (monthFilter && monthFilter !== "all") {
     andFilters.push({ month: Number(monthFilter) });
   }
 

@@ -33,7 +33,9 @@ export default async function MonthlyCashReportPage({
   const { page, pageSize } = getPaginationState(resolvedSearchParams);
   const yearFilter = getQueryParam(resolvedSearchParams, "year");
   const monthFilter = getQueryParam(resolvedSearchParams, "month");
-  const activeFilterCount = [yearFilter, monthFilter, directionFilter].filter(Boolean).length;
+  const activeFilterCount = [yearFilter, monthFilter, directionFilter].filter(
+    (f) => f && f !== "all"
+  ).length;
 
   const where: Prisma.CashLedgerWhereInput = {
     isActive: true,
@@ -49,7 +51,7 @@ export default async function MonthlyCashReportPage({
           ],
         }
       : {}),
-    ...(directionFilter ? { direction: directionFilter as LedgerDirection } : {}),
+    ...(directionFilter && directionFilter !== "all" ? { direction: directionFilter as LedgerDirection } : {}),
   };
 
   const entries = await db.cashLedger.findMany({

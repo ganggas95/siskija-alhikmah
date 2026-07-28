@@ -3,11 +3,13 @@ import { ScrollText } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/app/page-header";
+import { SortableHeader } from "@/components/table/sortable-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
+import { parseSortParam, type SortState } from "@/lib/table-sort";
 import {
   getPaginationState,
   getQueryParam,
@@ -33,19 +35,22 @@ export default async function ContributionBillsPage({
     statusFilter,
     yearFilter,
     monthFilter,
-  ].filter(Boolean).length;
+  ].filter((f) => f && f !== "all").length;
+
+  const sortParam = getQueryParam(resolvedSearchParams, "sort");
+  const sort: SortState = parseSortParam(sortParam);
   const andFilters: Prisma.ContributionBillWhereInput[] = [];
 
-  if (regionIdFilter) {
+  if (regionIdFilter && regionIdFilter !== "all") {
     andFilters.push({ household: { regionId: regionIdFilter } });
   }
-  if (statusFilter) {
+  if (statusFilter && statusFilter !== "all") {
     andFilters.push({ status: statusFilter as BillStatus });
   }
-  if (yearFilter) {
+  if (yearFilter && yearFilter !== "all") {
     andFilters.push({ year: Number(yearFilter) });
   }
-  if (monthFilter) {
+  if (monthFilter && monthFilter !== "all") {
     andFilters.push({ month: Number(monthFilter) });
   }
 
@@ -75,7 +80,9 @@ export default async function ContributionBillsPage({
           where: { canceledAt: null },
         },
       },
-      orderBy: [{ year: "desc" }, { month: "desc" }, { household: { code: "asc" } }],
+      orderBy: sort.column
+        ? { [sort.column]: sort.direction === "asc" ? "asc" : "desc" }
+        : [{ year: "desc" }, { month: "desc" }, { household: { code: "asc" } }],
       skip,
       take,
     }),
@@ -222,11 +229,17 @@ export default async function ContributionBillsPage({
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="px-3 py-3">Periode</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader column="month" label="Periode" sort={sort} baseHref="/iuran/tagihan" currentSearchParams={resolvedSearchParams} />
+                  </th>
                   <th className="px-3 py-3">Jamaah</th>
                   <th className="px-3 py-3">Wilayah</th>
-                  <th className="px-3 py-3">Status</th>
-                  <th className="px-3 py-3 text-right">Nominal</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader column="status" label="Status" sort={sort} baseHref="/iuran/tagihan" currentSearchParams={resolvedSearchParams} />
+                  </th>
+                  <th className="px-3 py-3 text-right">
+                    <SortableHeader column="amountDue" label="Nominal" sort={sort} baseHref="/iuran/tagihan" currentSearchParams={resolvedSearchParams} />
+                  </th>
                 </tr>
               </thead>
               <tbody>

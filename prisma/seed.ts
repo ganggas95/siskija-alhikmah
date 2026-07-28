@@ -140,6 +140,9 @@ async function main() {
     { name: "Air", type: CategoryType.EXPENSE },
     { name: "Perawatan", type: CategoryType.EXPENSE },
     { name: "Honor Petugas", type: CategoryType.EXPENSE },
+    { name: "Majelis Taklim", type: CategoryType.EXPENSE },
+    { name: "Gotong Royong", type: CategoryType.EXPENSE },
+    { name: "Konsumsi Majelis Taklim", type: CategoryType.EXPENSE },
   ];
 
   for (const category of categorySeeds) {

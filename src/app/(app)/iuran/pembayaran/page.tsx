@@ -4,11 +4,13 @@ import Link from "next/link";
 import { Prisma } from "@prisma/client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { SortableHeader } from "@/components/table/sortable-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
+import { parseSortParam, type SortState } from "@/lib/table-sort";
 import {
   getPaginationState,
   getQueryParam,
@@ -28,16 +30,19 @@ export default async function ContributionPaymentsPage({
   const yearFilter = getQueryParam(resolvedSearchParams, "year");
   const monthFilter = getQueryParam(resolvedSearchParams, "month");
   const { page, skip, take, pageSize } = getPaginationState(resolvedSearchParams);
-  const activeFilterCount = [methodFilter, yearFilter, monthFilter].filter(Boolean).length;
+  const activeFilterCount = [methodFilter, yearFilter, monthFilter].filter((f) => f && f !== "all").length;
+
+  const sortParam = getQueryParam(resolvedSearchParams, "sort");
+  const sort: SortState = parseSortParam(sortParam);
   const andFilters: Prisma.ContributionPaymentWhereInput[] = [];
 
-  if (methodFilter) {
+  if (methodFilter && methodFilter !== "all") {
     andFilters.push({ method: methodFilter as PaymentMethod });
   }
-  if (yearFilter) {
+  if (yearFilter && yearFilter !== "all") {
     andFilters.push({ bill: { year: Number(yearFilter) } });
   }
-  if (monthFilter) {
+  if (monthFilter && monthFilter !== "all") {
     andFilters.push({ bill: { month: Number(monthFilter) } });
   }
 
@@ -62,7 +67,9 @@ export default async function ContributionPaymentsPage({
           include: { household: true },
         },
       },
-      orderBy: { paymentDate: "desc" },
+      orderBy: sort.column
+        ? { [sort.column]: sort.direction === "asc" ? "asc" : "desc" }
+        : { paymentDate: "desc" },
       skip,
       take,
     }),
@@ -188,10 +195,16 @@ export default async function ContributionPaymentsPage({
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="px-3 py-3">Tanggal</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader column="paymentDate" label="Tanggal" sort={sort} baseHref="/iuran/pembayaran" currentSearchParams={resolvedSearchParams} />
+                  </th>
                   <th className="px-3 py-3">Jamaah</th>
-                  <th className="px-3 py-3">Metode</th>
-                  <th className="px-3 py-3 text-right">Nominal</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader column="method" label="Metode" sort={sort} baseHref="/iuran/pembayaran" currentSearchParams={resolvedSearchParams} />
+                  </th>
+                  <th className="px-3 py-3 text-right">
+                    <SortableHeader column="amountPaid" label="Nominal" sort={sort} baseHref="/iuran/pembayaran" currentSearchParams={resolvedSearchParams} />
+                  </th>
                 </tr>
               </thead>
               <tbody>

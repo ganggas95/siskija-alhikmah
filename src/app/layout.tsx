@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { RouteProgress } from "@/components/app/route-progress";
 import { ThemeToggle } from "@/components/app/theme-toggle";
+import { ToastProvider } from "@/components/ui/toast";
 
 import "./globals.css";
 
@@ -76,7 +77,7 @@ export default function RootLayout({
             <ThemeToggle />
           </div>
         </div>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

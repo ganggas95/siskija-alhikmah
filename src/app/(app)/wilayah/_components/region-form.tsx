@@ -1,7 +1,14 @@
+"use client";
+
+import { useActionState, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
+
 import { FormActions } from "@/components/form/form-actions";
+import { useToast } from "@/components/ui/toast";
+import type { ActionResult } from "@/lib/action-result";
 
 type RegionFormProps = {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<ActionResult>;
   mode: "create" | "edit";
   redirectTo?: string;
   defaultValues?: {
@@ -18,8 +25,31 @@ export function RegionForm({
   redirectTo = mode === "create" ? "/wilayah/tambah" : "/wilayah",
   defaultValues,
 }: RegionFormProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { showToast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [result, formAction] = useActionState(
+    async (_: ActionResult, formData: FormData) => action(formData),
+    null,
+  );
+
+  useEffect(() => {
+    if (!result) return;
+    showToast(result.success ? "success" : "error", result.message);
+    if (!result.success) return;
+    formRef.current?.reset();
+    if (result.redirectTo && result.redirectTo !== pathname) {
+      router.push(result.redirectTo);
+    }
+  }, [pathname, result, router, showToast]);
+
   return (
-    <form action={action} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5">
+    <form
+      ref={formRef}
+      action={formAction}
+      className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
+    >
       <input type="hidden" name="redirectTo" value={redirectTo} />
       {defaultValues?.id ? <input type="hidden" name="id" value={defaultValues.id} /> : null}
 

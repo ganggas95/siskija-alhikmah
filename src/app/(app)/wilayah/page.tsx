@@ -13,6 +13,8 @@ import {
   resolveSearchParams,
   type SearchParamsInput,
 } from "@/lib/table-query";
+import { parseSortParam, getPrismaOrderBy, type SortState } from "@/lib/table-sort";
+import { SortableHeader } from "@/components/table/sortable-header";
 
 export default async function RegionPage({
   searchParams,
@@ -24,6 +26,10 @@ export default async function RegionPage({
   const query = getQueryParam(resolvedSearchParams, "q");
   const status = getQueryParam(resolvedSearchParams, "status");
   const { page, skip, take, pageSize } = getPaginationState(resolvedSearchParams);
+  
+  // Parse sort parameter
+  const sortParam = getQueryParam(resolvedSearchParams, "sort");
+  const sort: SortState = parseSortParam(sortParam);
 
   const where: Prisma.RegionWhereInput = {
     deletedAt: null,
@@ -52,7 +58,9 @@ export default async function RegionPage({
           },
         },
       },
-      orderBy: { name: "asc" },
+      orderBy: sort.column 
+        ? { [sort.column]: sort.direction }
+        : { name: "asc" },
       skip,
       take,
     }),
@@ -147,8 +155,33 @@ export default async function RegionPage({
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="px-3 py-3">Nama</th>
-                  <th className="px-3 py-3">Status</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="name"
+                      label="Nama"
+                      sort={sort}
+                      baseHref="/wilayah"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="isActive"
+                      label="Status"
+                      sort={sort}
+                      baseHref="/wilayah"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="createdAt"
+                      label="Tanggal"
+                      sort={sort}
+                      baseHref="/wilayah"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
                   <th className="px-3 py-3">Jumlah KK</th>
                   <th className="px-3 py-3 text-right">Aksi</th>
                 </tr>
@@ -161,6 +194,7 @@ export default async function RegionPage({
                       <p className="text-slate-500">{region.description ?? "-"}</p>
                     </td>
                     <td className="px-3 py-3">{region.isActive ? "Aktif" : "Nonaktif"}</td>
+                    <td className="px-3 py-3 text-slate-600">{region.createdAt.toLocaleDateString("id-ID")}</td>
                     <td className="px-3 py-3">{region._count.households}</td>
                     <td className="px-3 py-3 text-right">
                       <Link

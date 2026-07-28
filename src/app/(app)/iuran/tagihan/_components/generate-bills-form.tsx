@@ -1,7 +1,14 @@
+"use client";
+
+import { useActionState, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
+
 import { FormActions } from "@/components/form/form-actions";
+import { useToast } from "@/components/ui/toast";
+import type { ActionResult } from "@/lib/action-result";
 
 type GenerateBillsFormProps = {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<ActionResult>;
   redirectTo?: string;
 };
 
@@ -9,10 +16,33 @@ export function GenerateBillsForm({
   action,
   redirectTo = "/iuran/tagihan",
 }: GenerateBillsFormProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { showToast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [result, formAction] = useActionState(
+    async (_: ActionResult, formData: FormData) => action(formData),
+    null,
+  );
+
+  useEffect(() => {
+    if (!result) return;
+    showToast(result.success ? "success" : "error", result.message);
+    if (!result.success) return;
+    formRef.current?.reset();
+    if (result.redirectTo && result.redirectTo !== pathname) {
+      router.push(result.redirectTo);
+    }
+  }, [pathname, result, router, showToast]);
+
   const now = new Date();
 
   return (
-    <form action={action} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5">
+    <form
+      ref={formRef}
+      action={formAction}
+      className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
+    >
       <input type="hidden" name="redirectTo" value={redirectTo} />
 
       <h3 className="text-lg font-semibold text-slate-900">Generate Tagihan</h3>

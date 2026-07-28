@@ -4,10 +4,12 @@ import Link from "next/link";
 import { Prisma } from "@prisma/client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { SortableHeader } from "@/components/table/sortable-header";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
+import { parseSortParam, type SortState } from "@/lib/table-sort";
 import {
   getPaginationState,
   getQueryParam,
@@ -26,6 +28,9 @@ export default async function LedgerPage({
   const directionFilter = getQueryParam(resolvedSearchParams, "direction");
   const { page, pageSize } = getPaginationState(resolvedSearchParams);
 
+  const sortParam = getQueryParam(resolvedSearchParams, "sort");
+  const sort: SortState = parseSortParam(sortParam);
+
   const where: Prisma.CashLedgerWhereInput = {
     isActive: true,
     ...(query
@@ -36,12 +41,14 @@ export default async function LedgerPage({
           ],
         }
       : {}),
-    ...(directionFilter ? { direction: directionFilter as LedgerDirection } : {}),
+    ...(directionFilter && directionFilter !== "all" ? { direction: directionFilter as LedgerDirection } : {}),
   };
 
   const entries = await db.cashLedger.findMany({
     where,
-    orderBy: [{ transactionDate: "asc" }, { createdAt: "asc" }],
+    orderBy: sort.column
+      ? { [sort.column]: sort.direction === "asc" ? "asc" : "desc" }
+      : [{ transactionDate: "asc" }, { createdAt: "asc" }],
   });
 
   const rows = entries.reduce<Array<{ entry: (typeof entries)[number]; runningBalance: number }>>(
@@ -152,8 +159,12 @@ export default async function LedgerPage({
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-slate-200 text-slate-500">
               <tr>
-                <th className="px-3 py-3">Tanggal</th>
-                <th className="px-3 py-3">Nomor</th>
+                <th className="px-3 py-3">
+                  <SortableHeader column="transactionDate" label="Tanggal" sort={sort} baseHref="/buku-kas" currentSearchParams={resolvedSearchParams} />
+                </th>
+                <th className="px-3 py-3">
+                  <SortableHeader column="transactionNumber" label="Nomor" sort={sort} baseHref="/buku-kas" currentSearchParams={resolvedSearchParams} />
+                </th>
                 <th className="px-3 py-3">Keterangan</th>
                 <th className="px-3 py-3">Debit</th>
                 <th className="px-3 py-3">Kredit</th>

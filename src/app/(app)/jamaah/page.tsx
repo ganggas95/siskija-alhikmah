@@ -13,6 +13,8 @@ import {
   resolveSearchParams,
   type SearchParamsInput,
 } from "@/lib/table-query";
+import { parseSortParam, type SortState } from "@/lib/table-sort";
+import { SortableHeader } from "@/components/table/sortable-header";
 
 export default async function HouseholdPage({
   searchParams,
@@ -27,12 +29,17 @@ export default async function HouseholdPage({
   const disabilityFilter = getQueryParam(resolvedSearchParams, "disability");
   const elderlyFilter = getQueryParam(resolvedSearchParams, "elderly");
   const { page, skip, take, pageSize } = getPaginationState(resolvedSearchParams);
+  
+  // Parse sort parameter
+  const sortParam = getQueryParam(resolvedSearchParams, "sort");
+  const sort: SortState = parseSortParam(sortParam);
+  
   const activeFilterCount = [
     regionIdFilter,
     statusFilter,
     disabilityFilter,
     elderlyFilter,
-  ].filter(Boolean).length;
+  ].filter((f) => f && f !== "all").length;
 
   const where: Prisma.HouseholdWhereInput = {
     deletedAt: null,
@@ -48,7 +55,7 @@ export default async function HouseholdPage({
           ],
         }
       : {}),
-    ...(regionIdFilter ? { regionId: regionIdFilter } : {}),
+    ...(regionIdFilter && regionIdFilter !== "all" ? { regionId: regionIdFilter } : {}),
     ...(statusFilter === "active"
       ? { status: HouseholdStatus.ACTIVE }
       : statusFilter === "inactive"
@@ -70,7 +77,9 @@ export default async function HouseholdPage({
     db.household.findMany({
       where,
       include: { region: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: sort.column
+        ? { [sort.column]: sort.direction === "asc" ? "asc" : "desc" }
+        : { createdAt: "desc" },
       skip,
       take,
     }),
@@ -228,10 +237,43 @@ export default async function HouseholdPage({
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="px-3 py-3">Kode</th>
-                  <th className="px-3 py-3">Nama</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="code"
+                      label="Kode"
+                      sort={sort}
+                      baseHref="/jamaah"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="headName"
+                      label="Nama"
+                      sort={sort}
+                      baseHref="/jamaah"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
                   <th className="px-3 py-3">Wilayah</th>
-                  <th className="px-3 py-3">Status</th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="createdAt"
+                      label="Tanggal"
+                      sort={sort}
+                      baseHref="/jamaah"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
+                  <th className="px-3 py-3">
+                    <SortableHeader
+                      column="status"
+                      label="Status"
+                      sort={sort}
+                      baseHref="/jamaah"
+                      currentSearchParams={resolvedSearchParams}
+                    />
+                  </th>
                   <th className="px-3 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
@@ -246,6 +288,7 @@ export default async function HouseholdPage({
                       </p>
                     </td>
                     <td className="px-3 py-3">{household.region?.name ?? "-"}</td>
+                    <td className="px-3 py-3 text-slate-600">{household.createdAt.toLocaleDateString("id-ID")}</td>
                     <td className="px-3 py-3">{household.status}</td>
                     <td className="px-3 py-3 text-right">
                       <Link
