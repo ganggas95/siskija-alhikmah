@@ -4,16 +4,18 @@ import Link from "next/link";
 import { Prisma } from "@prisma/client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { ResponsiveInlineGrid } from "@/components/layout/responsive-inline-grid";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
+import { DeleteRegionForm } from "./_components/delete-region-form";
 import {
   getPaginationState,
   getQueryParam,
   resolveSearchParams,
   type SearchParamsInput,
 } from "@/lib/table-query";
-import { parseSortParam, getPrismaOrderBy, type SortState } from "@/lib/table-sort";
+import { parseSortParam, type SortState } from "@/lib/table-sort";
 import { SortableHeader } from "@/components/table/sortable-header";
 
 export default async function RegionPage({
@@ -93,7 +95,7 @@ export default async function RegionPage({
                 </Link>
               </div>
             </div>
-            <form className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto]">
+            <ResponsiveInlineGrid as="form">
               <input
                 name="q"
                 defaultValue={query}
@@ -112,7 +114,7 @@ export default async function RegionPage({
               <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
                 Terapkan
               </button>
-            </form>
+            </ResponsiveInlineGrid>
           </div>
           {/* Mobile card view */}
           <div className="space-y-3 md:hidden">
@@ -140,12 +142,15 @@ export default async function RegionPage({
                   <span className="text-sm text-slate-600">
                     {region._count.households} KK
                   </span>
-                  <Link
-                    href={`/wilayah/${region.id}/edit`}
-                    className="text-sm font-medium text-green-800"
-                  >
-                    Edit
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/wilayah/${region.id}/edit`}
+                      className="text-sm font-medium text-green-800"
+                    >
+                      Edit
+                    </Link>
+                    <DeleteRegionForm regionId={region.id} />
+                  </div>
                 </div>
               </article>
             ))}
@@ -197,12 +202,15 @@ export default async function RegionPage({
                     <td className="px-3 py-3 text-slate-600">{region.createdAt.toLocaleDateString("id-ID")}</td>
                     <td className="px-3 py-3">{region._count.households}</td>
                     <td className="px-3 py-3 text-right">
-                      <Link
-                        href={`/wilayah/${region.id}/edit`}
-                        className="text-sm font-medium text-green-800"
-                      >
-                        Edit
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link
+                          href={`/wilayah/${region.id}/edit`}
+                          className="text-sm font-medium text-green-800"
+                        >
+                          Edit
+                        </Link>
+                        <DeleteRegionForm regionId={region.id} />
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -22,6 +22,14 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
+
 type IconName =
   | "dashboard"
   | "region"
@@ -87,51 +95,47 @@ export function SidebarNav({
   );
 
   return (
-    <nav
-      aria-label="Navigasi modul"
-      className="space-y-3"
-    >
+    <nav aria-label="Navigasi modul" className="space-y-3">
       {groups.map((group) => {
         const collapsed = collapsedGroups[group.label] ?? false;
         const activeGroup = isGroupActive(pathname, group);
 
         return (
-          <div
+          <Collapsible
             key={group.label}
+            open={!collapsed}
+            onOpenChange={(open) =>
+              setCollapsedGroups((current) => ({
+                ...current,
+                [group.label]: !open,
+              }))
+            }
             className={`w-full rounded-2xl border p-3 transition ${
               activeGroup
                 ? "border-green-200 bg-green-50/60"
                 : "border-slate-200 bg-slate-50"
             }`}
           >
-            <button
-              type="button"
-              onClick={() =>
-                setCollapsedGroups((current) => ({
-                  ...current,
-                  [group.label]: !collapsed,
-                }))
-              }
-              className="flex w-full items-center justify-between gap-3 rounded-xl px-1 py-1 text-left"
-              aria-expanded={!collapsed}
-              aria-controls={`submenu-${group.label}`}
-            >
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                <FolderTree className="h-3.5 w-3.5 shrink-0" />
-                {group.label}
-              </span>
-              {collapsed ? (
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-slate-500" />
-              )}
-            </button>
-
-            {!collapsed ? (
-              <div
-                id={`submenu-${group.label}`}
-                className="mt-3 flex flex-col gap-2"
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex h-auto w-full items-center justify-between gap-3 rounded-xl px-1 py-1 text-left hover:bg-transparent"
               >
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <FolderTree className="h-3.5 w-3.5 shrink-0" />
+                  {group.label}
+                </span>
+                {collapsed ? (
+                  <ChevronRight className="h-4 w-4 text-slate-500" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-slate-500" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent id={`submenu-${group.label}`} className="mt-3">
+              <div className="flex flex-col gap-2">
                 {group.items.map((item) => {
                   const Icon = iconMap[item.icon];
                   const activeItem = isItemActive(pathname, item.href);
@@ -153,14 +157,14 @@ export function SidebarNav({
                   );
                 })}
               </div>
-            ) : null}
+            </CollapsibleContent>
 
             {collapsed && activeGroup ? (
-              <p className="mt-3 rounded-xl bg-green-50 px-3 py-2 text-sm font-medium text-green-800">
+              <Badge variant="secondary" className="mt-3 inline-flex rounded-xl px-3 py-2 text-sm font-medium">
                 {group.items.find((item) => isItemActive(pathname, item.href))?.label}
-              </p>
+              </Badge>
             ) : null}
-          </div>
+          </Collapsible>
         );
       })}
     </nav>

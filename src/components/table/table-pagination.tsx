@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   buildQueryString,
   getTotalPages,
@@ -44,9 +46,9 @@ export function TablePagination({
           <ChevronLeft className="h-4 w-4" />
           <span>Sebelumnya</span>
         </PaginationLink>
-        <span className="rounded-lg bg-slate-100 px-3 py-2 font-medium text-slate-700">
+        <Badge variant="secondary" className="rounded-lg px-3 py-2 font-medium">
           Halaman {safePage} / {totalPages}
-        </span>
+        </Badge>
         <PaginationLink
           pathname={pathname}
           searchParams={searchParams}
@@ -76,20 +78,17 @@ function PaginationLink({
 }) {
   if (disabled) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-slate-400">
+      <Button type="button" variant="outline" disabled className="gap-2">
         {children}
-      </span>
+      </Button>
     );
   }
 
   const href = `${pathname}${buildQueryString(searchParams, { page: targetPage })}`;
 
   return (
-    <Link
-      href={href}
-      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-50"
-    >
-      {children}
-    </Link>
+    <Button asChild variant="outline" className="gap-2">
+      <Link href={href}>{children}</Link>
+    </Button>
   );
 }

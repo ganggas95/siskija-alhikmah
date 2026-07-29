@@ -11,6 +11,7 @@ import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
 import { parseSortParam, type SortState } from "@/lib/table-sort";
+import { deletePaymentAction } from "./actions";
 import {
   getPaginationState,
   getQueryParam,
@@ -183,6 +184,14 @@ export default async function ContributionPaymentsPage({
                   <p className="mt-4 text-right text-base font-semibold text-slate-900">
                     {formatRupiah(payment.amountPaid.toString())}
                   </p>
+                  <div className="mt-3 flex items-center justify-end">
+                    <form action={async (formData) => { await deletePaymentAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus pembayaran ini?')) e.preventDefault(); }}>
+                      <input type="hidden" name="id" value={payment.id} />
+                      <button className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-600">
+                        Hapus
+                      </button>
+                    </form>
+                  </div>
                 </article>
               ))
             ) : (
@@ -205,6 +214,7 @@ export default async function ContributionPaymentsPage({
                   <th className="px-3 py-3 text-right">
                     <SortableHeader column="amountPaid" label="Nominal" sort={sort} baseHref="/iuran/pembayaran" currentSearchParams={resolvedSearchParams} />
                   </th>
+                  <th className="px-3 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -217,6 +227,12 @@ export default async function ContributionPaymentsPage({
                     </td>
                     <td className="px-3 py-3">{payment.method}</td>
                     <td className="px-3 py-3 text-right">{formatRupiah(payment.amountPaid.toString())}</td>
+                    <td className="px-3 py-3 text-right">
+                      <form action={async (formData) => { await deletePaymentAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus pembayaran ini?')) e.preventDefault(); }}>
+                        <input type="hidden" name="id" value={payment.id} />
+                        <button className="text-sm font-medium text-red-600">Hapus</button>
+                      </form>
+                    </td>
                   </tr>
                 ))}
               </tbody>

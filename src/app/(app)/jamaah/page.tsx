@@ -7,6 +7,7 @@ import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
+import { deleteHouseholdAction } from "./actions";
 import {
   getPaginationState,
   getQueryParam,
@@ -218,12 +219,18 @@ export default async function HouseholdPage({
                   </p>
                   <div className="mt-4 flex items-center justify-between">
                     <p className="text-sm text-slate-500">{household.region?.name ?? "-"}</p>
-                    <Link
-                      href={`/jamaah/${household.id}/edit`}
-                      className="text-sm font-medium text-green-800"
-                    >
-                      Edit
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/jamaah/${household.id}/edit`}
+                        className="text-sm font-medium text-green-800"
+                      >
+                        Edit
+                      </Link>
+                      <form action={async (formData) => { await deleteHouseholdAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus data jamaah ini?')) e.preventDefault(); }}>
+                        <input type="hidden" name="id" value={household.id} />
+                        <button className="text-sm font-medium text-red-600">Hapus</button>
+                      </form>
+                    </div>
                   </div>
                 </article>
               ))
@@ -291,12 +298,18 @@ export default async function HouseholdPage({
                     <td className="px-3 py-3 text-slate-600">{household.createdAt.toLocaleDateString("id-ID")}</td>
                     <td className="px-3 py-3">{household.status}</td>
                     <td className="px-3 py-3 text-right">
-                      <Link
-                        href={`/jamaah/${household.id}/edit`}
-                        className="text-sm font-medium text-green-800"
-                      >
-                        Edit
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link
+                          href={`/jamaah/${household.id}/edit`}
+                          className="text-sm font-medium text-green-800"
+                        >
+                          Edit
+                        </Link>
+                        <form action={async (formData) => { await deleteHouseholdAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus data jamaah ini?')) e.preventDefault(); }}>
+                          <input type="hidden" name="id" value={household.id} />
+                          <button className="text-sm font-medium text-red-600">Hapus</button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))}

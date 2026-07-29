@@ -4,7 +4,7 @@ import { HouseholdStatus, PermissionKey } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, requireSession } from "@/lib/rbac";
 import { createHouseholdCode } from "@/modules/shared/numbering";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -108,6 +108,55 @@ export async function updateHouseholdAction(
     return {
       success: true,
       message: "Data jamaah berhasil diperbarui.",
+      redirectTo: getRedirectTo(formData, "/jamaah"),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Terjadi kesalahan server.",
+    };
+  }
+}
+
+export async function deleteHouseholdAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireSession();
+
+  try {
+    const id = String(formData.get("id") ?? "");
+
+    if (!id) {
+      return { success: false, message: "ID jamaah tidak ditemukan." };
+    }
+
+    const household = await db.household.findUnique({
+      where: { id },
+      select: { id: true, createdById: true, deletedAt: true },
+    });
+
+    if (!household || household.deletedAt) {
+      return { success: false, message: "Data jamaah tidak ditemukan." };
+    }
+
+    // Only Admin can delete any data; non-admin can only delete their own
+    if (user.role !== "ADMIN" && household.createdById !== user.id) {
+      return {
+        success: false,
+        message: "Anda tidak memiliki izin untuk menghapus data ini.",
+      };
+    }
+
+    await db.household.update({
+      where: { id },
+      data: { deletedAt: new Date(), updatedById: user.id },
+    });
+
+    revalidatePath("/jamaah");
+    return {
+      success: true,
+      message: "Data jamaah berhasil dihapus.",
       redirectTo: getRedirectTo(formData, "/jamaah"),
     };
   } catch (error) {

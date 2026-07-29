@@ -3,6 +3,8 @@
 import { Moon, Sun } from "lucide-react";
 import { useSyncExternalStore } from "react";
 
+import { Button } from "@/components/ui/button";
+
 const STORAGE_KEY = "siskija-theme";
 const THEME_EVENT = "siskija-theme-change";
 
@@ -57,7 +59,7 @@ export function ThemeToggle({
   const isDark = theme === "dark";
 
   return (
-    <button
+    <Button
       type="button"
       aria-label={isDark ? "Aktifkan tema terang" : "Aktifkan tema gelap"}
       title={isDark ? "Aktifkan tema terang" : "Aktifkan tema gelap"}
@@ -68,7 +70,8 @@ export function ThemeToggle({
         localStorage.setItem(STORAGE_KEY, nextTheme);
         window.dispatchEvent(new Event(THEME_EVENT));
       }}
-      className={`inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm backdrop-blur transition hover:bg-card-alt ${className}`}
+      variant="outline"
+      className={`gap-2 rounded-full bg-card px-4 py-2 shadow-sm backdrop-blur hover:bg-card-alt ${className}`}
     >
       {isDark ? (
         <Sun className="h-4 w-4 text-secondary" />
@@ -76,6 +79,6 @@ export function ThemeToggle({
         <Moon className="h-4 w-4 text-secondary" />
       )}
       <span>{isDark ? "Tema Terang" : "Tema Gelap"}</span>
-    </button>
+    </Button>
   );
 }

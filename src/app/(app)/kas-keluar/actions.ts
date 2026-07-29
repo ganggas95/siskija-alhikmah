@@ -4,7 +4,7 @@ import { ExpenseStatus, PaymentMethod, PermissionKey } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, requireSession } from "@/lib/rbac";
 import { verifyExpense } from "@/modules/cash/services/verify-expense";
 import { createTransactionNumber } from "@/modules/shared/numbering";
 import type { ActionResult } from "@/lib/action-result";
@@ -127,6 +127,63 @@ export async function updateExpenseAction(
     return {
       success: true,
       message: "Transaksi kas keluar berhasil diperbarui.",
+      redirectTo: getRedirectTo(formData, "/kas-keluar"),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Terjadi kesalahan server.",
+    };
+  }
+}
+
+export async function deleteExpenseAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireSession();
+
+  try {
+    const id = String(formData.get("id") ?? "");
+
+    if (!id) {
+      return { success: false, message: "ID transaksi tidak ditemukan." };
+    }
+
+    const transaction = await db.expenseTransaction.findUnique({
+      where: { id },
+      select: { id: true, status: true, createdById: true },
+    });
+
+    if (!transaction) {
+      return {
+        success: false,
+        message: "Transaksi kas keluar tidak ditemukan.",
+      };
+    }
+
+    // Only DRAFT transactions can be deleted
+    if (transaction.status !== ExpenseStatus.DRAFT) {
+      return {
+        success: false,
+        message: "Hanya transaksi berstatus DRAFT yang dapat dihapus.",
+      };
+    }
+
+    // Only the creator can delete, unless Admin
+    if (user.role !== "ADMIN" && transaction.createdById !== user.id) {
+      return {
+        success: false,
+        message: "Anda tidak memiliki izin untuk menghapus transaksi ini.",
+      };
+    }
+
+    await db.expenseTransaction.delete({ where: { id } });
+
+    revalidateExpensePaths();
+    return {
+      success: true,
+      message: "Transaksi kas keluar berhasil dihapus.",
       redirectTo: getRedirectTo(formData, "/kas-keluar"),
     };
   } catch (error) {

@@ -17,24 +17,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const themeScript = `
-(() => {
-  try {
-    const storageKey = "siskija-theme";
-    const storedTheme = window.localStorage.getItem(storageKey);
-    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-    const theme = storedTheme === "dark" || storedTheme === "light"
-      ? storedTheme
-      : systemTheme;
-    document.documentElement.dataset.theme = theme;
-  } catch (error) {
-    document.documentElement.dataset.theme = "light";
-  }
-})();
-`;
-
 export const metadata: Metadata = {
   title: {
     default: "SISKIJA AL-HIKMAH",
@@ -69,9 +51,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col overflow-y-visible">
         <RouteProgress />
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <div className="pointer-events-none fixed bottom-4 right-4 z-40 hidden lg:block">
           <div className="pointer-events-auto">
             <ThemeToggle />

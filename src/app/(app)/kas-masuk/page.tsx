@@ -19,6 +19,7 @@ import {
 import { parseSortParam, type SortState } from "@/lib/table-sort";
 import { SortableHeader } from "@/components/table/sortable-header";
 import { verifyIncome } from "@/modules/cash/services/verify-income";
+import { deleteIncomeAction } from "./actions";
 
 async function verifyIncomeAction(formData: FormData) {
   "use server";
@@ -211,12 +212,20 @@ export default async function IncomePage({
                       </form>
                     ) : null}
                     {transaction.status === IncomeStatus.DRAFT ? (
-                      <Link
-                        href={`/kas-masuk/${transaction.id}/edit`}
-                        className="rounded-lg bg-green-800 px-3 py-2 text-xs font-semibold text-white"
-                      >
-                        Edit
-                      </Link>
+                      <>
+                        <Link
+                          href={`/kas-masuk/${transaction.id}/edit`}
+                          className="rounded-lg bg-green-800 px-3 py-2 text-xs font-semibold text-white"
+                        >
+                          Edit
+                        </Link>
+                        <form action={async (formData) => { await deleteIncomeAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus transaksi kas masuk ini?')) e.preventDefault(); }}>
+                          <input type="hidden" name="id" value={transaction.id} />
+                          <button className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-600">
+                            Hapus
+                          </button>
+                        </form>
+                      </>
                     ) : null}
                   </div>
                 </article>
@@ -296,12 +305,18 @@ export default async function IncomePage({
                     </td>
                     <td className="px-3 py-3 text-right">
                       {transaction.status === IncomeStatus.DRAFT ? (
-                        <Link
-                          href={`/kas-masuk/${transaction.id}/edit`}
-                          className="text-sm font-medium text-green-800"
-                        >
-                          Edit
-                        </Link>
+                        <div className="flex items-center justify-end gap-3">
+                          <Link
+                            href={`/kas-masuk/${transaction.id}/edit`}
+                            className="text-sm font-medium text-green-800"
+                          >
+                            Edit
+                          </Link>
+                          <form action={async (formData) => { await deleteIncomeAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus transaksi kas masuk ini?')) e.preventDefault(); }}>
+                            <input type="hidden" name="id" value={transaction.id} />
+                            <button className="text-sm font-medium text-red-600">Hapus</button>
+                          </form>
+                        </div>
                       ) : (
                         <span className="text-sm text-slate-400">-</span>
                       )}

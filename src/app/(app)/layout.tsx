@@ -114,9 +114,9 @@ export default async function AppLayout({
     .filter((group) => group.items.length > 0);
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="flex w-full max-w-none items-center justify-between gap-3 px-4 py-3 lg:mx-auto lg:max-w-7xl lg:py-4">
+    <div className="min-h-screen w-full bg-slate-100">
+      <header className="sticky inset-x-0 top-0 z-30 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="flex w-full max-w-none items-center justify-between gap-3 px-3 py-3 sm:px-4 lg:mx-auto lg:max-w-7xl lg:py-4">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <MobileSidebarDrawer
               groups={visibleNavigationGroups}

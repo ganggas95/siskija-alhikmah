@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Prisma } from "@prisma/client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { ResponsiveInlineGrid } from "@/components/layout/responsive-inline-grid";
 import { SortableHeader } from "@/components/table/sortable-header";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
@@ -87,7 +88,7 @@ export default async function LedgerPage({
               Reset
             </Link>
           </div>
-          <form className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto]">
+          <ResponsiveInlineGrid as="form">
             <input
               name="q"
               defaultValue={query}
@@ -109,7 +110,7 @@ export default async function LedgerPage({
             <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
               Terapkan
             </button>
-          </form>
+          </ResponsiveInlineGrid>
         </div>
         <div className="space-y-3 md:hidden">
           {pagedRows.length > 0 ? (
