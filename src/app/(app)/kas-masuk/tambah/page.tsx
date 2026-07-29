@@ -4,7 +4,6 @@ import { ArrowDownCircle } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
-import { createIncomeAction } from "../actions";
 import { IncomeForm } from "../_components/income-form";
 
 export default async function AddIncomePage() {
@@ -24,7 +23,7 @@ export default async function AddIncomePage() {
         icon={ArrowDownCircle}
       />
       <div className="max-w-3xl">
-        <IncomeForm action={createIncomeAction} mode="create" categories={categories} />
+        <IncomeForm mode="create" categories={categories} />
       </div>
     </section>
   );

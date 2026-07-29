@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
-import { updateIncomeAction } from "../../actions";
 import { IncomeForm } from "../../_components/income-form";
 
 export default async function EditIncomePage({
@@ -64,7 +63,6 @@ export default async function EditIncomePage({
       />
       <div className="max-w-3xl">
         <IncomeForm
-          action={updateIncomeAction}
           mode="edit"
           categories={categories}
           defaultValues={{

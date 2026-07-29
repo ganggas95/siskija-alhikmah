@@ -1,12 +1,13 @@
 "use client";
 
 import { HouseholdStatus } from "@prisma/client";
-import { useActionState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef } from "react";
 
 import { FormActions } from "@/components/form/form-actions";
 import { useToast } from "@/components/ui/toast";
 import type { ActionResult } from "@/lib/action-result";
+import { createHouseholdAction, updateHouseholdAction } from "../actions";
 
 type RegionOption = {
   id: string;
@@ -14,7 +15,6 @@ type RegionOption = {
 };
 
 type HouseholdFormProps = {
-  action: (formData: FormData) => Promise<ActionResult>;
   mode: "create" | "edit";
   regions: RegionOption[];
   redirectTo?: string;
@@ -33,7 +33,6 @@ type HouseholdFormProps = {
 };
 
 export function HouseholdForm({
-  action,
   mode,
   regions,
   redirectTo = mode === "create" ? "/jamaah/tambah" : "/jamaah",
@@ -44,7 +43,10 @@ export function HouseholdForm({
   const { showToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [result, formAction] = useActionState(
-    async (_: ActionResult, formData: FormData) => action(formData),
+    async (_: ActionResult, formData: FormData) =>
+      mode === "create"
+        ? createHouseholdAction(formData)
+        : updateHouseholdAction(formData),
     null,
   );
 
@@ -65,15 +67,26 @@ export function HouseholdForm({
       className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
     >
       <input type="hidden" name="redirectTo" value={redirectTo} />
-      {defaultValues?.id ? <input type="hidden" name="id" value={defaultValues.id} /> : null}
+      {defaultValues?.id ? (
+        <input type="hidden" name="id" value={defaultValues.id} />
+      ) : null}
 
       <h3 className="text-lg font-semibold text-slate-900">
         {mode === "create" ? "Tambah Kepala Keluarga" : "Edit Data Jamaah"}
       </h3>
 
       <div className="mt-4 space-y-4">
-        <Field label="Nama Kepala Keluarga" name="headName" required defaultValue={defaultValues?.headName} />
-        <Field label="Alamat" name="address" defaultValue={defaultValues?.address} />
+        <Field
+          label="Nama Kepala Keluarga"
+          name="headName"
+          required
+          defaultValue={defaultValues?.headName}
+        />
+        <Field
+          label="Alamat"
+          name="address"
+          defaultValue={defaultValues?.address}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="RT" name="rt" defaultValue={defaultValues?.rt} />
@@ -99,7 +112,9 @@ export function HouseholdForm({
         {mode === "edit" ? (
           <>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Status</label>
+              <label className="text-sm font-medium text-slate-700">
+                Status
+              </label>
               <select
                 name="status"
                 defaultValue={defaultValues?.status ?? HouseholdStatus.ACTIVE}
@@ -132,7 +147,9 @@ export function HouseholdForm({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Catatan</label>
+              <label className="text-sm font-medium text-slate-700">
+                Catatan
+              </label>
               <textarea
                 name="notes"
                 defaultValue={defaultValues?.notes ?? ""}
@@ -144,7 +161,7 @@ export function HouseholdForm({
         ) : null}
 
         <FormActions
-          cancelHref={redirectTo}
+          cancelHref={"/jamaah"}
           submitLabel={mode === "create" ? "Simpan Jamaah" : "Simpan Perubahan"}
         />
       </div>

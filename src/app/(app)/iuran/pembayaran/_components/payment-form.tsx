@@ -1,12 +1,13 @@
 "use client";
 
 import { PaymentMethod } from "@prisma/client";
-import { useActionState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef } from "react";
 
 import { FormActions } from "@/components/form/form-actions";
 import { useToast } from "@/components/ui/toast";
 import type { ActionResult } from "@/lib/action-result";
+import { recordPaymentAction } from "../actions";
 
 type BillOption = {
   id: string;
@@ -20,7 +21,6 @@ type BillOption = {
 };
 
 type PaymentFormProps = {
-  action: (formData: FormData) => Promise<ActionResult>;
   bills: BillOption[];
   redirectTo?: string;
 };
@@ -30,7 +30,6 @@ function toDateInputValue(value: Date) {
 }
 
 export function PaymentForm({
-  action,
   bills,
   redirectTo = "/iuran/pembayaran/tambah",
 }: PaymentFormProps) {
@@ -39,7 +38,8 @@ export function PaymentForm({
   const { showToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [result, formAction] = useActionState(
-    async (_: ActionResult, formData: FormData) => action(formData),
+    async (_: ActionResult, formData: FormData) =>
+      recordPaymentAction(formData),
     null,
   );
 
@@ -60,10 +60,19 @@ export function PaymentForm({
       className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
       onSubmit={(e) => {
         const form = e.currentTarget;
-        const billSelect = form.elements.namedItem("billId") as HTMLSelectElement;
-        const amountInput = form.elements.namedItem("amountPaid") as HTMLInputElement;
-        const selected = bills.find((b: BillOption) => b.id === billSelect.value);
-        if (selected && Number(amountInput.value) < Number(selected.amountDue)) {
+        const billSelect = form.elements.namedItem(
+          "billId",
+        ) as HTMLSelectElement;
+        const amountInput = form.elements.namedItem(
+          "amountPaid",
+        ) as HTMLInputElement;
+        const selected = bills.find(
+          (b: BillOption) => b.id === billSelect.value,
+        );
+        if (
+          selected &&
+          Number(amountInput.value) < Number(selected.amountDue)
+        ) {
           e.preventDefault();
           amountInput.setCustomValidity(
             `Nominal dibayar minimal Rp${Number(selected.amountDue).toLocaleString("id-ID")}`,
@@ -88,7 +97,9 @@ export function PaymentForm({
               const select = e.currentTarget;
               const btn = document.getElementById("bill-amount-btn");
               const display = document.getElementById("bill-amount-display");
-              const amountInput = document.getElementById("amount-input") as HTMLInputElement;
+              const amountInput = document.getElementById(
+                "amount-input",
+              ) as HTMLInputElement;
               const data = bills.find((b: BillOption) => b.id === select.value);
               if (btn && data) {
                 btn.classList.remove("hidden");
@@ -105,7 +116,8 @@ export function PaymentForm({
             <option value="">Pilih tagihan</option>
             {bills.map((bill) => (
               <option key={bill.id} value={bill.id}>
-                {bill.household.code} - {bill.household.headName} ({bill.month}/{bill.year})
+                {bill.household.code} - {bill.household.headName} ({bill.month}/
+                {bill.year})
               </option>
             ))}
           </select>
@@ -114,19 +126,29 @@ export function PaymentForm({
             id="bill-amount-btn"
             className="hidden text-xs text-slate-500 hover:text-emerald-700"
             onClick={() => {
-              const amountInput = document.getElementById("amount-input") as HTMLInputElement;
+              const amountInput = document.getElementById(
+                "amount-input",
+              ) as HTMLInputElement;
               if (amountInput) {
                 amountInput.value = amountInput.dataset.amountDue ?? "";
                 amountInput.setCustomValidity("");
               }
             }}
           >
-            Isi nominal tagihan: <span id="bill-amount-display" className="font-semibold text-emerald-600">—</span>
+            Isi nominal tagihan:{" "}
+            <span
+              id="bill-amount-display"
+              className="font-semibold text-emerald-600"
+            >
+              —
+            </span>
           </button>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Tanggal Bayar</label>
+          <label className="text-sm font-medium text-slate-700">
+            Tanggal Bayar
+          </label>
           <input
             type="date"
             name="paymentDate"
@@ -137,7 +159,9 @@ export function PaymentForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Nominal Dibayar</label>
+          <label className="text-sm font-medium text-slate-700">
+            Nominal Dibayar
+          </label>
           <input
             id="amount-input"
             type="number"
@@ -145,12 +169,16 @@ export function PaymentForm({
             required
             min={1}
             className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-            onInput={(e) => (e.currentTarget as HTMLInputElement).setCustomValidity("")}
+            onInput={(e) =>
+              (e.currentTarget as HTMLInputElement).setCustomValidity("")
+            }
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Metode Pembayaran</label>
+          <label className="text-sm font-medium text-slate-700">
+            Metode Pembayaran
+          </label>
           <select
             name="method"
             defaultValue={PaymentMethod.CASH}
@@ -174,9 +202,11 @@ export function PaymentForm({
           />
         </div>
 
-        <FormActions cancelHref={redirectTo} submitLabel="Simpan Pembayaran" />
+        <FormActions
+          cancelHref={"/iuran/pembayaran/"}
+          submitLabel="Simpan Pembayaran"
+        />
       </div>
     </form>
   );
 }
-

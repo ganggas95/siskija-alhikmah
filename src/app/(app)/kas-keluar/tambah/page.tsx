@@ -4,7 +4,6 @@ import { CategoryType, PermissionKey } from "@prisma/client";
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
-import { createExpenseAction } from "../actions";
 import { ExpenseForm } from "../_components/expense-form";
 
 export default async function AddExpensePage() {
@@ -24,7 +23,7 @@ export default async function AddExpensePage() {
         icon={ArrowUpCircle}
       />
       <div className="max-w-3xl">
-        <ExpenseForm action={createExpenseAction} mode="create" categories={categories} />
+        <ExpenseForm mode="create" categories={categories} />
       </div>
     </section>
   );

@@ -1,10 +1,10 @@
 import { PermissionKey } from "@prisma/client";
-import { LogOut, ShieldUser } from "lucide-react";
+import { ShieldUser } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { signOut } from "@/auth";
 import { MobileSidebarDrawer } from "@/components/app/mobile-sidebar-drawer";
+import { LogoutButton } from "@/components/app/logout-button";
 import { SidebarNav, type SidebarNavGroup } from "@/components/app/sidebar-nav";
 import { requireSession, rolePermissions } from "@/lib/rbac";
 
@@ -98,10 +98,6 @@ const navigationGroups: SidebarNavGroup[] = [
 export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const handleSignOut = async () => {
-    "use server";
-    await signOut({ redirectTo: "/login" });
-  };
   const user = await requireSession();
   const allowedPermissions = new Set(rolePermissions[user.role] ?? []);
   const visibleNavigationGroups = navigationGroups
@@ -123,7 +119,6 @@ export default async function AppLayout({
               userName={user.name}
               userRole={user.role}
               profileHref="/profil"
-              logoutAction={handleSignOut}
             />
             <div className="overflow-hidden rounded-2xl bg-white p-1 ring-1 ring-slate-200">
               <Image
@@ -156,12 +151,7 @@ export default async function AppLayout({
             <span className="rounded-full bg-green-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-green-800">
               {user.role}
             </span>
-            <form action={handleSignOut}>
-              <button className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-50">
-                <LogOut className="h-4 w-4" />
-                Keluar
-              </button>
-            </form>
+            <LogoutButton className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-50" />
           </div>
         </div>
       </header>

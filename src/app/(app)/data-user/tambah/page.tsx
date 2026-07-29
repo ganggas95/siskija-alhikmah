@@ -3,8 +3,6 @@ import { ShieldUser } from "lucide-react";
 
 import { PageHeader } from "@/components/app/page-header";
 import { requirePermission } from "@/lib/rbac";
-
-import { createUserAction } from "../actions";
 import { UserForm } from "../_components/user-form";
 
 export default async function AddUserPage() {
@@ -18,7 +16,7 @@ export default async function AddUserPage() {
         icon={ShieldUser}
       />
       <div className="max-w-2xl">
-        <UserForm action={createUserAction} mode="create" />
+        <UserForm mode="create" />
       </div>
     </section>
   );

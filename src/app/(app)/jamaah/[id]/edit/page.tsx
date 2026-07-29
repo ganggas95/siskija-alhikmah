@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
-import { updateHouseholdAction } from "../../actions";
 import { HouseholdForm } from "../../_components/household-form";
 
 export default async function EditHouseholdPage({
@@ -43,7 +42,6 @@ export default async function EditHouseholdPage({
       />
       <div className="max-w-3xl">
         <HouseholdForm
-          action={updateHouseholdAction}
           mode="edit"
           regions={regions}
           defaultValues={{

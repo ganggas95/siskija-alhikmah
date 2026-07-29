@@ -1,14 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef } from "react";
 
 import { FormActions } from "@/components/form/form-actions";
 import { useToast } from "@/components/ui/toast";
 import type { ActionResult } from "@/lib/action-result";
+import { createRegionAction, updateRegionAction } from "../actions";
 
 type RegionFormProps = {
-  action: (formData: FormData) => Promise<ActionResult>;
   mode: "create" | "edit";
   redirectTo?: string;
   defaultValues?: {
@@ -20,7 +20,6 @@ type RegionFormProps = {
 };
 
 export function RegionForm({
-  action,
   mode,
   redirectTo = mode === "create" ? "/wilayah/tambah" : "/wilayah",
   defaultValues,
@@ -30,7 +29,10 @@ export function RegionForm({
   const { showToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [result, formAction] = useActionState(
-    async (_: ActionResult, formData: FormData) => action(formData),
+    async (_: ActionResult, formData: FormData) =>
+      mode === "create"
+        ? createRegionAction(formData)
+        : updateRegionAction(formData),
     null,
   );
 
@@ -51,7 +53,9 @@ export function RegionForm({
       className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
     >
       <input type="hidden" name="redirectTo" value={redirectTo} />
-      {defaultValues?.id ? <input type="hidden" name="id" value={defaultValues.id} /> : null}
+      {defaultValues?.id ? (
+        <input type="hidden" name="id" value={defaultValues.id} />
+      ) : null}
 
       <h3 className="text-lg font-semibold text-slate-900">
         {mode === "create" ? "Tambah Wilayah" : "Edit Wilayah"}
@@ -59,7 +63,9 @@ export function RegionForm({
 
       <div className="mt-4 space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Nama Wilayah</label>
+          <label className="text-sm font-medium text-slate-700">
+            Nama Wilayah
+          </label>
           <input
             name="name"
             defaultValue={defaultValues?.name ?? ""}
@@ -69,7 +75,9 @@ export function RegionForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Keterangan</label>
+          <label className="text-sm font-medium text-slate-700">
+            Keterangan
+          </label>
           <textarea
             name="description"
             defaultValue={defaultValues?.description ?? ""}
@@ -83,7 +91,9 @@ export function RegionForm({
             <label className="text-sm font-medium text-slate-700">Status</label>
             <select
               name="isActive"
-              defaultValue={defaultValues?.isActive === false ? "false" : "true"}
+              defaultValue={
+                defaultValues?.isActive === false ? "false" : "true"
+              }
               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
             >
               <option value="true">Aktif</option>
@@ -93,8 +103,10 @@ export function RegionForm({
         ) : null}
 
         <FormActions
-          cancelHref={redirectTo}
-          submitLabel={mode === "create" ? "Simpan Wilayah" : "Simpan Perubahan"}
+          cancelHref={"/wilayah"}
+          submitLabel={
+            mode === "create" ? "Simpan Wilayah" : "Simpan Perubahan"
+          }
         />
       </div>
     </form>

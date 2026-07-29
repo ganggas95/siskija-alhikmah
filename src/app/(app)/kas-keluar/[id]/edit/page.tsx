@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
-import { updateExpenseAction } from "../../actions";
 import { ExpenseForm } from "../../_components/expense-form";
 
 export default async function EditExpensePage({
@@ -64,7 +63,6 @@ export default async function EditExpensePage({
       />
       <div className="max-w-3xl">
         <ExpenseForm
-          action={updateExpenseAction}
           mode="edit"
           categories={categories}
           defaultValues={{

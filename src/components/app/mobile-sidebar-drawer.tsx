@@ -1,10 +1,11 @@
 "use client";
 
-import { LogOut, Menu, ShieldUser } from "lucide-react";
+import { Menu, ShieldUser } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { SidebarNav, type SidebarNavGroup } from "@/components/app/sidebar-nav";
+import { LogoutButton } from "@/components/app/logout-button";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,6 @@ type MobileSidebarDrawerProps = {
   userName: string;
   userRole: string;
   profileHref: string;
-  logoutAction: () => Promise<void>;
 };
 
 export function MobileSidebarDrawer({
@@ -30,7 +30,6 @@ export function MobileSidebarDrawer({
   userName,
   userRole,
   profileHref,
-  logoutAction,
 }: MobileSidebarDrawerProps) {
   const [open, setOpen] = useState(false);
 
@@ -80,12 +79,10 @@ export function MobileSidebarDrawer({
                   Profil
                 </Link>
               </Button>
-              <form action={logoutAction}>
-                <Button type="submit" variant="outline" className="w-full gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Keluar
-                </Button>
-              </form>
+              <LogoutButton
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                onClick={() => setOpen(false)}
+              />
             </div>
 
             <div className="mt-3">

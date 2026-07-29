@@ -6,14 +6,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { FormActions } from "@/components/form/form-actions";
 import { useToast } from "@/components/ui/toast";
 import type { ActionResult } from "@/lib/action-result";
+import { generateBillsAction } from "../actions";
 
 type GenerateBillsFormProps = {
-  action: (formData: FormData) => Promise<ActionResult>;
   redirectTo?: string;
 };
 
 export function GenerateBillsForm({
-  action,
   redirectTo = "/iuran/tagihan",
 }: GenerateBillsFormProps) {
   const router = useRouter();
@@ -21,7 +20,7 @@ export function GenerateBillsForm({
   const { showToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [result, formAction] = useActionState(
-    async (_: ActionResult, formData: FormData) => action(formData),
+    async (_: ActionResult, formData: FormData) => generateBillsAction(formData),
     null,
   );
 

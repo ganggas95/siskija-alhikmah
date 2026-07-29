@@ -4,7 +4,6 @@ import { CreditCard } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
-import { recordPaymentAction } from "../actions";
 import { PaymentForm } from "../_components/payment-form";
 
 export default async function AddContributionPaymentPage() {
@@ -40,7 +39,7 @@ export default async function AddContributionPaymentPage() {
         icon={CreditCard}
       />
       <div className="max-w-3xl">
-        <PaymentForm action={recordPaymentAction} bills={billsFormatted} />
+        <PaymentForm bills={billsFormatted} />
       </div>
     </section>
   );

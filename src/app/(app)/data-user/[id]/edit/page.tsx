@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
 
-import { updateUserAction } from "../../actions";
 import { UserForm } from "../../_components/user-form";
 
 export default async function EditUserPage({
@@ -75,7 +74,6 @@ export default async function EditUserPage({
       />
       <div className="max-w-2xl">
         <UserForm
-          action={updateUserAction}
           mode="edit"
           defaultValues={{
             id: user.id,

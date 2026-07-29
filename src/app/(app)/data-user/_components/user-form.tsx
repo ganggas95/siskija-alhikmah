@@ -1,16 +1,16 @@
 "use client";
 
 import { AppRoleKey } from "@prisma/client";
-import { useActionState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef } from "react";
 
 import { FormActions } from "@/components/form/form-actions";
 import { useToast } from "@/components/ui/toast";
 import type { ActionResult } from "@/lib/action-result";
 import { roleOptions } from "@/lib/user-role";
+import { createUserAction, updateUserAction } from "../actions";
 
 type UserFormProps = {
-  action: (formData: FormData) => Promise<ActionResult>;
   mode: "create" | "edit";
   redirectTo?: string;
   defaultValues?: {
@@ -23,7 +23,6 @@ type UserFormProps = {
 };
 
 export function UserForm({
-  action,
   mode,
   redirectTo = mode === "create" ? "/data-user/tambah" : "/data-user",
   defaultValues,
@@ -33,7 +32,10 @@ export function UserForm({
   const { showToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [result, formAction] = useActionState(
-    async (_: ActionResult, formData: FormData) => action(formData),
+    async (_: ActionResult, formData: FormData) =>
+      mode === "create"
+        ? createUserAction(formData)
+        : updateUserAction(formData),
     null,
   );
 
@@ -54,7 +56,9 @@ export function UserForm({
       className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
     >
       <input type="hidden" name="redirectTo" value={redirectTo} />
-      {defaultValues?.id ? <input type="hidden" name="id" value={defaultValues.id} /> : null}
+      {defaultValues?.id ? (
+        <input type="hidden" name="id" value={defaultValues.id} />
+      ) : null}
 
       <h3 className="text-lg font-semibold text-slate-900">
         {mode === "create" ? "Tambah User" : "Edit User"}
@@ -88,7 +92,8 @@ export function UserForm({
           />
         ) : (
           <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Pada mode edit, hanya <strong>status</strong> dan <strong>role</strong> yang dapat diubah.
+            Pada mode edit, hanya <strong>status</strong> dan{" "}
+            <strong>role</strong> yang dapat diubah.
           </div>
         )}
 
@@ -120,7 +125,7 @@ export function UserForm({
         </div>
 
         <FormActions
-          cancelHref={redirectTo}
+          cancelHref={"/data-user"}
           submitLabel={mode === "create" ? "Simpan User" : "Simpan Perubahan"}
         />
       </div>
@@ -160,7 +165,9 @@ function Field({
             : "border-slate-300"
         }`}
       />
-      {helperText ? <p className="text-xs text-slate-500">{helperText}</p> : null}
+      {helperText ? (
+        <p className="text-xs text-slate-500">{helperText}</p>
+      ) : null}
     </div>
   );
 }

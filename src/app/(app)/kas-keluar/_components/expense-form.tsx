@@ -1,12 +1,13 @@
 "use client";
 
 import { ExpenseStatus, PaymentMethod } from "@prisma/client";
-import { useActionState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef } from "react";
 
 import { FormActions } from "@/components/form/form-actions";
 import { useToast } from "@/components/ui/toast";
 import type { ActionResult } from "@/lib/action-result";
+import { createExpenseAction, updateExpenseAction } from "../actions";
 
 type CategoryOption = {
   id: string;
@@ -14,7 +15,6 @@ type CategoryOption = {
 };
 
 type ExpenseFormProps = {
-  action: (formData: FormData) => Promise<ActionResult>;
   mode: "create" | "edit";
   categories: CategoryOption[];
   redirectTo?: string;
@@ -35,7 +35,6 @@ function toDateInputValue(value?: Date) {
 }
 
 export function ExpenseForm({
-  action,
   mode,
   categories,
   redirectTo = mode === "create" ? "/kas-keluar/tambah" : "/kas-keluar",
@@ -46,7 +45,10 @@ export function ExpenseForm({
   const { showToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [result, formAction] = useActionState(
-    async (_: ActionResult, formData: FormData) => action(formData),
+    async (_: ActionResult, formData: FormData) =>
+      mode === "create"
+        ? createExpenseAction(formData)
+        : updateExpenseAction(formData),
     null,
   );
 
@@ -67,7 +69,9 @@ export function ExpenseForm({
       className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
     >
       <input type="hidden" name="redirectTo" value={redirectTo} />
-      {defaultValues?.id ? <input type="hidden" name="id" value={defaultValues.id} /> : null}
+      {defaultValues?.id ? (
+        <input type="hidden" name="id" value={defaultValues.id} />
+      ) : null}
 
       <h3 className="text-lg font-semibold text-slate-900">
         {mode === "create" ? "Tambah Pengeluaran" : "Edit Kas Keluar"}
@@ -99,8 +103,19 @@ export function ExpenseForm({
           </select>
         </div>
 
-        <Field label="Penerima" name="payeeName" required defaultValue={defaultValues?.payeeName} />
-        <Field label="Nominal" name="amount" type="number" required defaultValue={defaultValues?.amount} />
+        <Field
+          label="Penerima"
+          name="payeeName"
+          required
+          defaultValue={defaultValues?.payeeName}
+        />
+        <Field
+          label="Nominal"
+          name="amount"
+          type="number"
+          required
+          defaultValue={defaultValues?.amount}
+        />
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Metode</label>
@@ -125,13 +140,17 @@ export function ExpenseForm({
             className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
           >
             <option value={ExpenseStatus.DRAFT}>DRAFT</option>
-            <option value={ExpenseStatus.PENDING_VERIFICATION}>PENDING_VERIFICATION</option>
+            <option value={ExpenseStatus.PENDING_VERIFICATION}>
+              PENDING_VERIFICATION
+            </option>
             <option value={ExpenseStatus.VERIFIED}>VERIFIED</option>
           </select>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Deskripsi</label>
+          <label className="text-sm font-medium text-slate-700">
+            Deskripsi
+          </label>
           <textarea
             name="description"
             defaultValue={defaultValues?.description ?? ""}
@@ -141,8 +160,10 @@ export function ExpenseForm({
         </div>
 
         <FormActions
-          cancelHref={redirectTo}
-          submitLabel={mode === "create" ? "Simpan Pengeluaran" : "Simpan Perubahan"}
+          cancelHref={"/kas-keluar"}
+          submitLabel={
+            mode === "create" ? "Simpan Pengeluaran" : "Simpan Perubahan"
+          }
         />
       </div>
     </form>

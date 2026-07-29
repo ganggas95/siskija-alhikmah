@@ -4,7 +4,6 @@ import { Users } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
-import { createHouseholdAction } from "../actions";
 import { HouseholdForm } from "../_components/household-form";
 
 export default async function AddHouseholdPage() {
@@ -24,7 +23,7 @@ export default async function AddHouseholdPage() {
         icon={Users}
       />
       <div className="max-w-3xl">
-        <HouseholdForm action={createHouseholdAction} mode="create" regions={regions} />
+        <HouseholdForm mode="create" regions={regions} />
       </div>
     </section>
   );

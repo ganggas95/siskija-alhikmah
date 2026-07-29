@@ -7,7 +7,6 @@ import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
-import { deleteHouseholdAction } from "./actions";
 import {
   getPaginationState,
   getQueryParam,
@@ -16,6 +15,7 @@ import {
 } from "@/lib/table-query";
 import { parseSortParam, type SortState } from "@/lib/table-sort";
 import { SortableHeader } from "@/components/table/sortable-header";
+import { DeleteHouseholdForm } from "./_components/delete-household-form";
 
 export default async function HouseholdPage({
   searchParams,
@@ -226,10 +226,7 @@ export default async function HouseholdPage({
                       >
                         Edit
                       </Link>
-                      <form action={async (formData) => { await deleteHouseholdAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus data jamaah ini?')) e.preventDefault(); }}>
-                        <input type="hidden" name="id" value={household.id} />
-                        <button className="text-sm font-medium text-red-600">Hapus</button>
-                      </form>
+                      <DeleteHouseholdForm householdId={household.id} />
                     </div>
                   </div>
                 </article>
@@ -305,10 +302,7 @@ export default async function HouseholdPage({
                         >
                           Edit
                         </Link>
-                        <form action={async (formData) => { await deleteHouseholdAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus data jamaah ini?')) e.preventDefault(); }}>
-                          <input type="hidden" name="id" value={household.id} />
-                          <button className="text-sm font-medium text-red-600">Hapus</button>
-                        </form>
+                        <DeleteHouseholdForm householdId={household.id} />
                       </div>
                     </td>
                   </tr>

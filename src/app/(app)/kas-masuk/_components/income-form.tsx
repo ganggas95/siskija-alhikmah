@@ -1,12 +1,13 @@
 "use client";
 
 import { IncomeStatus, PaymentMethod } from "@prisma/client";
-import { useActionState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef } from "react";
 
 import { FormActions } from "@/components/form/form-actions";
 import { useToast } from "@/components/ui/toast";
 import type { ActionResult } from "@/lib/action-result";
+import { createIncomeAction, updateIncomeAction } from "../actions";
 
 type CategoryOption = {
   id: string;
@@ -14,7 +15,6 @@ type CategoryOption = {
 };
 
 type IncomeFormProps = {
-  action: (formData: FormData) => Promise<ActionResult>;
   mode: "create" | "edit";
   categories: CategoryOption[];
   redirectTo?: string;
@@ -35,7 +35,6 @@ function toDateInputValue(value?: Date) {
 }
 
 export function IncomeForm({
-  action,
   mode,
   categories,
   redirectTo = mode === "create" ? "/kas-masuk/tambah" : "/kas-masuk",
@@ -46,7 +45,10 @@ export function IncomeForm({
   const { showToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [result, formAction] = useActionState(
-    async (_: ActionResult, formData: FormData) => action(formData),
+    async (_: ActionResult, formData: FormData) =>
+      mode === "create"
+        ? createIncomeAction(formData)
+        : updateIncomeAction(formData),
     null,
   );
 
@@ -67,7 +69,9 @@ export function IncomeForm({
       className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
     >
       <input type="hidden" name="redirectTo" value={redirectTo} />
-      {defaultValues?.id ? <input type="hidden" name="id" value={defaultValues.id} /> : null}
+      {defaultValues?.id ? (
+        <input type="hidden" name="id" value={defaultValues.id} />
+      ) : null}
 
       <h3 className="text-lg font-semibold text-slate-900">
         {mode === "create" ? "Tambah Kas Masuk" : "Edit Kas Masuk"}
@@ -99,8 +103,19 @@ export function IncomeForm({
           </select>
         </div>
 
-        <Field label="Sumber Pemasukan" name="sourceName" required defaultValue={defaultValues?.sourceName} />
-        <Field label="Nominal" name="amount" type="number" required defaultValue={defaultValues?.amount} />
+        <Field
+          label="Sumber Pemasukan"
+          name="sourceName"
+          required
+          defaultValue={defaultValues?.sourceName}
+        />
+        <Field
+          label="Nominal"
+          name="amount"
+          type="number"
+          required
+          defaultValue={defaultValues?.amount}
+        />
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Metode</label>
@@ -130,7 +145,9 @@ export function IncomeForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Deskripsi</label>
+          <label className="text-sm font-medium text-slate-700">
+            Deskripsi
+          </label>
           <textarea
             name="description"
             defaultValue={defaultValues?.description ?? ""}
@@ -140,8 +157,10 @@ export function IncomeForm({
         </div>
 
         <FormActions
-          cancelHref={redirectTo}
-          submitLabel={mode === "create" ? "Simpan Kas Masuk" : "Simpan Perubahan"}
+          cancelHref={"/kas-masuk"}
+          submitLabel={
+            mode === "create" ? "Simpan Kas Masuk" : "Simpan Perubahan"
+          }
         />
       </div>
     </form>
