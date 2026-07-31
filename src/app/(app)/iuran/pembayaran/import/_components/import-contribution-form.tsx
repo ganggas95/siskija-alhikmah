@@ -350,6 +350,18 @@ export function ImportContributionForm() {
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
                 required
               />
+              <span className="block rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-relaxed text-sky-900">
+                Belum memiliki format import pembayaran? Buka halaman Data Jamaah, gunakan tombol Export Pembayaran,
+                pilih tahun yang sama, lalu upload file hasil export di sini.{" "}
+                <a
+                  href="/jamaah"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-sky-800 underline underline-offset-2 hover:text-sky-950"
+                >
+                  Buka Data Jamaah
+                </a>
+              </span>
             </label>
 
             <label className="space-y-2">
