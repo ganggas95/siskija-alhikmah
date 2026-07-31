@@ -31,8 +31,8 @@ SISKIJA AL-HIKMAH adalah aplikasi Next.js full-stack untuk mengelola kepala kelu
 
 ## Menjalankan Lokal
 
-1. Salin `.env.example` menjadi `.env`.
-2. Pastikan PostgreSQL aktif dan database `sismata` tersedia.
+1. Salin `.env.development.example` menjadi `.env.development.local`, lalu sesuaikan URL database lokal jika perlu.
+2. Pastikan PostgreSQL aktif dan database `sismata_dev` tersedia.
 3. Jalankan:
 
 ```bash
@@ -44,6 +44,14 @@ pnpm dev
 ```
 
 4. Buka `http://localhost:3000`.
+
+## Strategi Env
+
+- `.env.example` berisi template dasar untuk semua mode.
+- `.env.development.local` dipakai saat `pnpm dev` untuk database lokal.
+- `.env.production.local` bisa dipakai di server jika platform deployment tidak menyediakan environment variable dari panel.
+- Jangan commit file `.env.local`, `.env.development.local`, atau `.env.production.local`.
+- Jika ada key yang sama di beberapa file, Next.js memakai prioritas mode lebih spesifik terlebih dahulu.
 
 ## Akun Demo
 

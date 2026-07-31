@@ -1,6 +1,12 @@
 "use server";
 
-import { BillStatus, IncomeStatus, PaymentMethod, PermissionKey } from "@prisma/client";
+import {
+  BillStatus,
+  ContributionPaymentStatus,
+  IncomeStatus,
+  PaymentMethod,
+  PermissionKey,
+} from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import Decimal from "decimal.js";
 
@@ -70,6 +76,7 @@ export async function deletePaymentAction(
         id: true,
         recordedById: true,
         canceledAt: true,
+        status: true,
         incomeTransactionId: true,
         billId: true,
         amountPaid: true,
@@ -90,10 +97,13 @@ export async function deletePaymentAction(
 
     await db.$transaction(async (tx) => {
       // 1. Cancel the payment
-      await tx.contributionPayment.update({
-        where: { id },
-        data: { canceledAt: new Date() },
-      });
+        await tx.contributionPayment.update({
+          where: { id },
+          data: {
+            canceledAt: new Date(),
+            status: ContributionPaymentStatus.CANCELED,
+          },
+        });
 
       // 2. Cancel the associated income transaction
       if (payment.incomeTransactionId) {
@@ -120,6 +130,7 @@ export async function deletePaymentAction(
         where: {
           billId: payment.billId,
           canceledAt: null,
+          status: ContributionPaymentStatus.VERIFIED,
         },
         select: { amountPaid: true },
       });
