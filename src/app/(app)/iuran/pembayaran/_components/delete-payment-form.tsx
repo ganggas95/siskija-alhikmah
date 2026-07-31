@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { useToast } from "@/components/ui/toast";
+import { LoadingButton } from "@/components/form/loading-button";
 import type { ActionResult } from "@/lib/action-result";
 import { deletePaymentAction } from "../actions";
 
@@ -44,13 +45,14 @@ export function DeletePaymentForm({
       }}
     >
       <input type="hidden" name="id" value={paymentId} />
-      <button
-        type="submit"
+      <LoadingButton
         disabled={pending}
+        loading={pending}
+        loadingLabel="Menghapus..."
         className={className ?? "text-sm font-medium text-red-600"}
       >
-        {pending ? "Menghapus..." : "Hapus"}
-      </button>
+        Hapus
+      </LoadingButton>
     </form>
   );
 }

@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 
+import { useAsyncRequest } from "@/components/app/request-state";
 import { Progress } from "@/components/ui/progress";
 
 type ImportSummary = {
@@ -98,6 +99,7 @@ function delay(ms: number) {
 export function ImportContributionForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { execute: executeRequest } = useAsyncRequest<Response>();
   const [state, setState] = useState<ImportState>(initialState);
 
   function applySnapshot(snapshot: ImportSnapshot) {
@@ -120,9 +122,9 @@ export function ImportContributionForm() {
 
   async function pollImportStatus(fileHash: string, targetYear: number) {
     while (true) {
-      const response = await fetch(
+      const response = await executeRequest(() => fetch(
         `/api/iuran/import?fileHash=${encodeURIComponent(fileHash)}&year=${encodeURIComponent(targetYear)}`,
-      );
+      ));
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
@@ -150,13 +152,13 @@ export function ImportContributionForm() {
   async function startPollingFallback(form: HTMLFormElement) {
     const formData = new FormData(form);
     formData.set("mode", "poll");
-    const response = await fetch("/api/iuran/import", {
+    const response = await executeRequest(() => fetch("/api/iuran/import", {
       method: "POST",
       headers: {
         "X-Import-Mode": "poll",
       },
       body: formData,
-    });
+    }));
 
     if (!response.ok) {
       const payload = await response.json().catch(() => null);
@@ -197,10 +199,10 @@ export function ImportContributionForm() {
     });
 
     try {
-      const response = await fetch("/api/iuran/import", {
+      const response = await executeRequest(() => fetch("/api/iuran/import", {
         method: "POST",
         body: formData,
-      });
+      }));
 
       if (!response.ok) {
         await startPollingFallback(form);

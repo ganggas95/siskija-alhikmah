@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 
+import { LoadingButton } from "@/components/form/loading-button";
+import { useToast } from "@/components/ui/toast";
+import type { ActionResult } from "@/lib/action-result";
 import { deleteRegionAction } from "../actions";
 
 type DeleteRegionFormProps = {
@@ -9,30 +12,44 @@ type DeleteRegionFormProps = {
 };
 
 export function DeleteRegionForm({ regionId }: DeleteRegionFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showToast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [result, formAction, pending] = useActionState(
+    async (_previousState: ActionResult | null, formData: FormData) =>
+      deleteRegionAction(formData),
+    null,
+  );
+
+  useEffect(() => {
+    if (!result) return;
+    showToast(result.success ? "success" : "error", result.message);
+    if (result.success) {
+      formRef.current?.reset();
+    }
+  }, [result, showToast]);
 
   return (
     <form
-      action={async (formData) => {
-        await deleteRegionAction(formData);
-      }}
+      ref={formRef}
+      action={formAction}
+      aria-busy={pending}
       onSubmit={(event) => {
         if (!window.confirm("Hapus wilayah ini?")) {
           event.preventDefault();
           return;
         }
-
-        setIsSubmitting(true);
       }}
     >
       <input type="hidden" name="id" value={regionId} />
-      <button
+      <LoadingButton
         type="submit"
-        disabled={isSubmitting}
+        loading={pending}
+        loadingLabel="Menghapus..."
+        variant="link"
         className="text-sm font-medium text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? "Menghapus..." : "Hapus"}
-      </button>
+        Hapus
+      </LoadingButton>
     </form>
   );
 }

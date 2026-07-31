@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
+import { useAsyncRequest } from "@/components/app/request-state";
 
 type RegionOption = {
   id: string;
@@ -48,6 +49,7 @@ const initialState = {
 export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { execute: executeRequest, isLoading } = useAsyncRequest<Response>();
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(initialState.open);
   const [regionId, setRegionId] = useState("");
@@ -84,10 +86,12 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
     setState({ open: true, importing: true, message: "Memproses import...", summary: null });
 
     try {
-      const response = await fetch("/api/jamaah/import", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await executeRequest(() =>
+        fetch("/api/jamaah/import", {
+          method: "POST",
+          body: formData,
+        }),
+      );
       const payload = (await response.json().catch(() => null)) as
         | { message?: string; summary?: ImportSummary }
         | null;
@@ -113,13 +117,39 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
     }
   }
 
+  async function handleTemplateDownload(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+
+    try {
+      const response = await executeRequest(() => fetch("/api/jamaah/import-template"));
+      if (!response.ok) {
+        throw new Error("Template import gagal diunduh.");
+      }
+
+      const downloadUrl = URL.createObjectURL(await response.blob());
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = "template-import-jamaah.xlsx";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(downloadUrl);
+      showToast("success", "Template import berhasil diunduh.");
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        message: error instanceof Error ? error.message : "Template import gagal diunduh.",
+      }));
+    }
+  }
+
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
         if (nextOpen) {
           setOpen(true);
-        } else {
+        } else if (!state.importing && !isLoading) {
           close();
         }
       }}
@@ -140,7 +170,7 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" aria-busy={state.importing || isLoading}>
           <div className="space-y-2">
             <label htmlFor="import-household-region" className="text-sm font-medium text-slate-700">
               Wilayah
@@ -149,7 +179,7 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
               id="import-household-region"
               value={regionId}
               onChange={(event) => setRegionId(event.target.value)}
-              disabled={state.importing}
+              disabled={state.importing || isLoading}
               required
               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
             >
@@ -171,19 +201,20 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
               id="import-household-file"
               type="file"
               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              disabled={state.importing}
+              disabled={state.importing || isLoading}
               required
               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
             />
           </div>
 
-          <a
-            href="/api/jamaah/import-template"
-            download="template-import-jamaah.xlsx"
-            className="inline-flex text-sm font-medium text-green-800 underline"
+          <button
+            type="button"
+            onClick={handleTemplateDownload}
+            disabled={state.importing || isLoading}
+            className="inline-flex text-sm font-medium text-green-800 underline disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Download Template Import
-          </a>
+            {state.importing ? "Mengimport..." : isLoading ? "Mengunduh..." : "Download Template Import"}
+          </button>
 
           {state.message ? (
             <div className={`rounded-2xl px-4 py-3 text-sm ${state.summary ? "bg-green-50 text-green-900" : "bg-amber-50 text-amber-900"}`}>
@@ -220,7 +251,7 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
               <button
                 type="button"
                 onClick={close}
-                disabled={state.importing}
+                disabled={state.importing || isLoading}
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Batal
@@ -228,7 +259,7 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
             </DialogClose>
             <button
               type="submit"
-              disabled={state.importing}
+              disabled={state.importing || isLoading}
               className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               {state.importing ? "Mengimport..." : "Import"}

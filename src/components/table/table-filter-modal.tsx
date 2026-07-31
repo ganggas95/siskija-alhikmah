@@ -33,6 +33,7 @@ export function TableFilterModal({
   children,
 }: TableFilterModalProps) {
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -49,13 +50,25 @@ export function TableFilterModal({
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
 
-        <form action={action} className="space-y-5">
+        <form
+          action={action}
+          className="space-y-5"
+          aria-busy={submitting}
+          onSubmit={() => setSubmitting(true)}
+        >
           <div className="grid gap-4">{children}</div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting}
+              onClick={() => setOpen(false)}
+            >
               Batal
             </Button>
-            <Button type="submit">{submitLabel}</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Menerapkan..." : submitLabel}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

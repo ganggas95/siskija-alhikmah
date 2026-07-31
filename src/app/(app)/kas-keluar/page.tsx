@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { SubmitButton } from "@/components/form/submit-button";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
@@ -206,9 +207,9 @@ export default async function ExpensePage({
                     {transaction.status !== ExpenseStatus.VERIFIED ? (
                       <form action={verifyExpenseAction}>
                         <input type="hidden" name="expenseId" value={transaction.id} />
-                        <button className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700">
+                        <SubmitButton pendingLabel="Memverifikasi..." className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700">
                           Verifikasi
-                        </button>
+                        </SubmitButton>
                       </form>
                     ) : null}
                     {transaction.status === ExpenseStatus.DRAFT ? (
@@ -221,9 +222,9 @@ export default async function ExpensePage({
                         </Link>
                         <form action={async (formData) => { await deleteExpenseAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus transaksi kas keluar ini?')) e.preventDefault(); }}>
                           <input type="hidden" name="id" value={transaction.id} />
-                          <button className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-600">
+                          <SubmitButton pendingLabel="Menghapus..." className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-600">
                             Hapus
-                          </button>
+                          </SubmitButton>
                         </form>
                       </>
                     ) : null}
@@ -295,9 +296,9 @@ export default async function ExpensePage({
                         {transaction.status !== ExpenseStatus.VERIFIED ? (
                           <form action={verifyExpenseAction}>
                             <input type="hidden" name="expenseId" value={transaction.id} />
-                            <button className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700">
+                            <SubmitButton pendingLabel="Memverifikasi..." className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700">
                               Verifikasi
-                            </button>
+                            </SubmitButton>
                           </form>
                         ) : null}
                       </div>
@@ -314,7 +315,7 @@ export default async function ExpensePage({
                           </Link>
                           <form action={async (formData) => { await deleteExpenseAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus transaksi kas keluar ini?')) e.preventDefault(); }}>
                             <input type="hidden" name="id" value={transaction.id} />
-                            <button className="text-sm font-medium text-red-600">Hapus</button>
+                            <SubmitButton pendingLabel="Menghapus..." className="text-sm font-medium text-red-600">Hapus</SubmitButton>
                           </form>
                         </div>
                       ) : (
