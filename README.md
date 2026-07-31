@@ -53,12 +53,6 @@ pnpm dev
 - Jangan commit file `.env.local`, `.env.development.local`, atau `.env.production.local`.
 - Jika ada key yang sama di beberapa file, Next.js memakai prioritas mode lebih spesifik terlebih dahulu.
 
-## Akun Demo
-
-- `admin@sismata.local` / `Password123!`
-- `bendahara@sismata.local` / `Password123!`
-- `auditor@sismata.local` / `Password123!`
-
 ## Perintah Penting
 
 ```bash
