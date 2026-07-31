@@ -31,6 +31,7 @@ import {
   resolveSearchParams,
   type SearchParamsInput,
 } from "@/lib/table-query";
+import { BalanceVisibilityToggle } from "./_components/balance-visibility-toggle";
 
 export default async function DashboardPage({
   searchParams,
@@ -169,9 +170,7 @@ export default async function DashboardPage({
       <section className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-6">
         <article className="flex flex-1 flex-col rounded-3xl bg-green-900 p-5 text-white shadow-sm">
           <p className="text-sm font-medium text-green-100">Saldo kas aktif</p>
-          <p className="mt-2 text-3xl font-semibold leading-tight">
-            {formatRupiah(balance)}
-          </p>
+          <BalanceVisibilityToggle value={formatRupiah(balance)} />
           <p className="mt-2 max-w-xl text-sm text-green-100">
             Fokus mobile: angka paling penting, aksi cepat, dan mutasi terbaru
             tanpa perlu membuka tabel lebar.
