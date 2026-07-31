@@ -11,7 +11,10 @@ type AuditPayload = {
   afterData?: Prisma.InputJsonValue;
 };
 
-export async function createAuditLog(payload: AuditPayload, tx = db) {
+export async function createAuditLog(
+  payload: AuditPayload,
+  tx: typeof db | Prisma.TransactionClient = db,
+) {
   return tx.auditLog.create({
     data: {
       userId: payload.userId ?? undefined,

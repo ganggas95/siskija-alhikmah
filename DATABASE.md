@@ -43,3 +43,10 @@ erDiagram
 - `IncomeTransaction(status, transactionDate)`
 - `ExpenseTransaction(status, transactionDate)`
 - `AuditLog(entity, entityId)`
+
+## Environment Untuk Database
+
+- Development lokal memakai `.env.development.local`.
+- Production memakai `.env.production.local` atau environment variable dari platform deploy.
+- Prisma runtime membaca `POSTGRES_PRISMA_URL`.
+- Prisma migration / direct connection membaca `POSTGRES_URL_NON_POOLING`.

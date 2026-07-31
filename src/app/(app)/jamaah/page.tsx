@@ -1,4 +1,4 @@
-import { HouseholdStatus, PermissionKey, Prisma } from "@prisma/client";
+import { PermissionKey, Prisma } from "@prisma/client";
 import { Users } from "lucide-react";
 import Link from "next/link";
 
@@ -15,7 +15,10 @@ import {
 } from "@/lib/table-query";
 import { parseSortParam, type SortState } from "@/lib/table-sort";
 import { SortableHeader } from "@/components/table/sortable-header";
+import { ExportPaymentModal } from "./_components/export-payment-modal";
+import { ImportHouseholdModal } from "./_components/import-household-modal";
 import { DeleteHouseholdForm } from "./_components/delete-household-form";
+import { buildHouseholdWhere } from "@/modules/households/filters";
 
 export default async function HouseholdPage({
   searchParams,
@@ -42,37 +45,13 @@ export default async function HouseholdPage({
     elderlyFilter,
   ].filter((f) => f && f !== "all").length;
 
-  const where: Prisma.HouseholdWhereInput = {
-    deletedAt: null,
-    ...(query
-      ? {
-          OR: [
-            { code: { contains: query, mode: "insensitive" } },
-            { headName: { contains: query, mode: "insensitive" } },
-            { address: { contains: query, mode: "insensitive" } },
-            { rt: { contains: query, mode: "insensitive" } },
-            { rw: { contains: query, mode: "insensitive" } },
-            { region: { name: { contains: query, mode: "insensitive" } } },
-          ],
-        }
-      : {}),
-    ...(regionIdFilter && regionIdFilter !== "all" ? { regionId: regionIdFilter } : {}),
-    ...(statusFilter === "active"
-      ? { status: HouseholdStatus.ACTIVE }
-      : statusFilter === "inactive"
-        ? { status: HouseholdStatus.INACTIVE }
-        : {}),
-    ...(disabilityFilter === "yes"
-      ? { isDisabled: true }
-      : disabilityFilter === "no"
-        ? { isDisabled: false }
-        : {}),
-    ...(elderlyFilter === "yes"
-      ? { isElderly: true }
-      : elderlyFilter === "no"
-        ? { isElderly: false }
-        : {}),
-  };
+  const where: Prisma.HouseholdWhereInput = buildHouseholdWhere({
+    query,
+    regionId: regionIdFilter,
+    status: statusFilter,
+    disability: disabilityFilter,
+    elderly: elderlyFilter,
+  });
 
   const [households, regions, totalHouseholds] = await Promise.all([
     db.household.findMany({
@@ -102,12 +81,23 @@ export default async function HouseholdPage({
           <div className="mb-4 flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
               <h3 className="text-lg font-semibold text-slate-900">Daftar Jamaah</h3>
-              <Link
-                href="/jamaah/tambah"
-                className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
-              >
-                Tambah Jamaah
-              </Link>
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <ImportHouseholdModal regions={regions} />
+                <ExportPaymentModal
+                  query={query}
+                  regionId={regionIdFilter}
+                  status={statusFilter}
+                  disability={disabilityFilter}
+                  elderly={elderlyFilter}
+                  defaultYear={new Date().getFullYear()}
+                />
+                <Link
+                  href="/jamaah/tambah"
+                  className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  Tambah Jamaah
+                </Link>
+              </div>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <form className="grid flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">

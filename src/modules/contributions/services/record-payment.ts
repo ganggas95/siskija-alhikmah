@@ -1,6 +1,7 @@
 import {
   BillStatus,
   CategoryType,
+  ContributionPaymentStatus,
   IncomeStatus,
   LedgerDirection,
   LedgerSourceType,
@@ -86,6 +87,7 @@ export async function recordContributionPayment(input: RecordPaymentInput) {
         amountPaid: input.amountPaid,
         paymentDate: input.paymentDate,
         method: input.method,
+        status: ContributionPaymentStatus.VERIFIED,
         notes: input.notes,
         receiptNumber: createReceiptNumber(),
         recordedById: input.actorId,
@@ -97,6 +99,7 @@ export async function recordContributionPayment(input: RecordPaymentInput) {
       where: {
         billId: bill.id,
         canceledAt: null,
+        status: ContributionPaymentStatus.VERIFIED,
       },
       select: { amountPaid: true },
     });

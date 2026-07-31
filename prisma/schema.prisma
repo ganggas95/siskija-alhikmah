@@ -53,12 +53,25 @@ enum IncomeStatus {
   CANCELED
 }
 
+enum ContributionPaymentStatus {
+  DRAFT
+  VERIFIED
+  CANCELED
+}
+
 enum ExpenseStatus {
   DRAFT
   PENDING_VERIFICATION
   VERIFIED
   REJECTED
   CANCELED
+}
+
+enum ImportBatchStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 enum CategoryType {
@@ -92,6 +105,7 @@ model User {
   createdExpenseTransactions ExpenseTransaction[] @relation("ExpenseCreatedBy")
   verifiedExpenseTransactions ExpenseTransaction[] @relation("ExpenseVerifiedBy")
   createdContributionPayments ContributionPayment[]
+  importedBatches ImportBatch[]
   audits          AuditLog[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -226,18 +240,58 @@ model ContributionPayment {
   amountPaid          Decimal            @db.Decimal(18, 2)
   paymentDate         DateTime
   method              PaymentMethod
+  status              ContributionPaymentStatus @default(VERIFIED)
   receiptNumber       String             @unique
   notes               String?
   recordedById        String?
   incomeTransactionId String?            @unique
+  importBatchId       String?
+  importSourceKey     String?            @unique
+  importSourceYear    Int?
+  importSourceMonth   Int?
+  importSourceRow     Int?
+  importSourceColumn  String?
   bill                ContributionBill   @relation(fields: [billId], references: [id], onDelete: Restrict)
   recordedBy          User?              @relation(fields: [recordedById], references: [id], onDelete: SetNull)
   incomeTransaction   IncomeTransaction? @relation(fields: [incomeTransactionId], references: [id], onDelete: SetNull)
+  importBatch         ImportBatch?       @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   canceledAt          DateTime?
 
+  @@index([status])
   @@index([paymentDate])
+  @@index([importBatchId])
+}
+
+model ImportBatch {
+  id              String                @id @default(cuid())
+  kind            String                @default("CONTRIBUTION_PAYMENT_EXCEL")
+  sourceFileName  String
+  sourceFileSize  Int
+  sourceFileHash  String
+  targetYear      Int
+  status          ImportBatchStatus     @default(PENDING)
+  totalRows       Int                   @default(0)
+  processedRows   Int                   @default(0)
+  createdPayments Int                   @default(0)
+  skippedPayments Int                   @default(0)
+  failedRows      Int                   @default(0)
+  spilledPayments  Int                   @default(0)
+  summary         Json?
+  errors          Json?
+  importedById    String?
+  importedBy      User?                 @relation(fields: [importedById], references: [id], onDelete: SetNull)
+  payments        ContributionPayment[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  @@index([targetYear])
+  @@index([status])
+  @@index([createdAt])
+  @@unique([sourceFileHash, targetYear])
 }
 
 model TransactionCategory {

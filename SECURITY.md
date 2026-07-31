@@ -19,6 +19,8 @@
 ## Catatan Operasional
 
 - `AUTH_SECRET` wajib diisi di environment
-- jangan commit `.env`
+- gunakan `.env.development.local` untuk database lokal saat development
+- gunakan `.env.production.local` atau environment variable host untuk production
+- jangan commit `.env`, `.env.local`, `.env.development.local`, atau `.env.production.local`
 - role UI tidak boleh dijadikan satu-satunya kontrol akses
 - untuk fase setelah MVP perlu ditambahkan rate limiting login, upload validation, dan hardening cookie/session
