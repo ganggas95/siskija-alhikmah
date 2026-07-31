@@ -189,20 +189,18 @@ export async function importHouseholds(
     }
 
     const codes = buildHouseholdCodes(lastCode, usedCodes, rowsToCreate.length);
-    for (const [index, row] of rowsToCreate.entries()) {
-      await tx.household.create({
-        data: {
-          code: codes[index],
-          headName: row.name,
-          rt: row.rt,
-          rw: row.rw,
-          regionId: input.regionId,
-          status: HouseholdStatus.ACTIVE,
-          createdById: input.importedById,
-          updatedById: input.importedById,
-        },
-      });
-    }
+    await tx.household.createMany({
+      data: rowsToCreate.map((row, index) => ({
+        code: codes[index],
+        headName: row.name,
+        rt: row.rt,
+        rw: row.rw,
+        regionId: input.regionId,
+        status: HouseholdStatus.ACTIVE,
+        createdById: input.importedById,
+        updatedById: input.importedById,
+      })),
+    });
 
     summary.createdRows = rowsToCreate.length;
 
@@ -226,5 +224,9 @@ export async function importHouseholds(
     );
 
     return summary;
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }, {
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    maxWait: 10_000,
+    timeout: 60_000,
+  });
 }
