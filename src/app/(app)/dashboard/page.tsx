@@ -37,7 +37,7 @@ export default async function DashboardPage({
 }: {
   searchParams?: SearchParamsInput;
 }) {
-  await requireSession();
+  const user = await requireSession();
   const resolvedSearchParams = await resolveSearchParams(searchParams);
   const query = getQueryParam(resolvedSearchParams, "q");
   const directionFilter = getQueryParam(resolvedSearchParams, "direction");
@@ -132,7 +132,7 @@ export default async function DashboardPage({
     },
   ];
 
-  const quickActions = [
+  const quickActions = user.role === "AUDITOR" ? [] : [
     {
       href: "/iuran/pembayaran/tambah",
       label: "Catat Pembayaran",
@@ -166,8 +166,8 @@ export default async function DashboardPage({
         description="Ringkasan saldo, iuran, dan transaksi terbaru untuk operasional harian bendahara."
         icon={Landmark}
       />
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-        <article className="rounded-3xl bg-green-900 p-5 text-white shadow-sm">
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-6">
+        <article className="flex flex-1 flex-col rounded-3xl bg-green-900 p-5 text-white shadow-sm">
           <p className="text-sm font-medium text-green-100">Saldo kas aktif</p>
           <p className="mt-2 text-3xl font-semibold leading-tight">
             {formatRupiah(balance)}
@@ -176,27 +176,29 @@ export default async function DashboardPage({
             Fokus mobile: angka paling penting, aksi cepat, dan mutasi terbaru
             tanpa perlu membuka tabel lebar.
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {quickActions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="rounded-2xl bg-white/10 p-4 transition hover:bg-white/15"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      {action.label}
-                    </p>
-                    <p className="mt-1 text-sm text-green-100">
-                      {action.description}
-                    </p>
+          {quickActions.length > 0 ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  className="rounded-2xl bg-white/10 p-4 transition hover:bg-white/15"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        {action.label}
+                      </p>
+                      <p className="mt-1 text-sm text-green-100">
+                        {action.description}
+                      </p>
+                    </div>
+                    <action.icon className="mt-0.5 h-5 w-5 shrink-0 text-green-100" />
                   </div>
-                  <action.icon className="mt-0.5 h-5 w-5 shrink-0 text-green-100" />
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </article>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
