@@ -1,5 +1,6 @@
 import { AppRoleKey, PermissionKey, Prisma } from "@prisma/client";
 import { ShieldUser } from "lucide-react";
+import { ActionLabel } from "@/components/ui/action-label";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/app/page-header";
@@ -111,10 +112,10 @@ export default async function UserPage({
                 href="/data-user/tambah"
                 className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
               >
-                Tambah User
+                <ActionLabel action="add">Tambah User</ActionLabel>
               </Link>
               <Link href="/data-user" className="text-sm font-medium text-green-800">
-                Reset
+                <ActionLabel action="reset">Reset</ActionLabel>
               </Link>
             </div>
           </div>
@@ -130,7 +131,7 @@ export default async function UserPage({
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
               />
               <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                Cari
+                <ActionLabel action="search">Cari</ActionLabel>
               </button>
             </form>
             <TableFilterModal
@@ -215,7 +216,7 @@ export default async function UserPage({
                             href={`/data-user/${user.id}/edit`}
                             className="text-sm font-medium text-green-800"
                           >
-                            Edit
+                            <ActionLabel action="edit">Edit</ActionLabel>
                           </Link>
                         )}
                       </td>

@@ -1,6 +1,5 @@
 "use client";
 
-import { Filter } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { ActionLabel } from "@/components/ui/action-label";
 
 type TableFilterModalProps = {
   title: string;
@@ -33,13 +33,13 @@ export function TableFilterModal({
   children,
 }: TableFilterModalProps) {
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant="outline" className="gap-2">
-          <Filter className="h-4 w-4" />
-          Filter
+          <ActionLabel action="filter">Filter</ActionLabel>
           {activeCount > 0 ? <Badge variant="secondary">{activeCount}</Badge> : null}
         </Button>
       </DialogTrigger>
@@ -49,13 +49,27 @@ export function TableFilterModal({
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
 
-        <form action={action} className="space-y-5">
+        <form
+          action={action}
+          className="space-y-5"
+          aria-busy={submitting}
+          onSubmit={() => setSubmitting(true)}
+        >
           <div className="grid gap-4">{children}</div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Batal
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting}
+              onClick={() => setOpen(false)}
+            >
+              <ActionLabel action="cancel">Batal</ActionLabel>
             </Button>
-            <Button type="submit">{submitLabel}</Button>
+            <Button type="submit" disabled={submitting}>
+              <ActionLabel action="submit">
+                {submitting ? "Menerapkan..." : submitLabel}
+              </ActionLabel>
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -2,8 +2,8 @@
 
 import type { FormEvent } from "react";
 import { useRef, useState } from "react";
-import { Upload } from "lucide-react";
-
+import { useAsyncRequest } from "@/components/app/request-state";
+import { ActionLabel } from "@/components/ui/action-label";
 import { Progress } from "@/components/ui/progress";
 
 type ImportSummary = {
@@ -98,6 +98,7 @@ function delay(ms: number) {
 export function ImportContributionForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { execute: executeRequest } = useAsyncRequest<Response>();
   const [state, setState] = useState<ImportState>(initialState);
 
   function applySnapshot(snapshot: ImportSnapshot) {
@@ -120,9 +121,9 @@ export function ImportContributionForm() {
 
   async function pollImportStatus(fileHash: string, targetYear: number) {
     while (true) {
-      const response = await fetch(
+      const response = await executeRequest(() => fetch(
         `/api/iuran/import?fileHash=${encodeURIComponent(fileHash)}&year=${encodeURIComponent(targetYear)}`,
-      );
+      ));
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
@@ -150,13 +151,13 @@ export function ImportContributionForm() {
   async function startPollingFallback(form: HTMLFormElement) {
     const formData = new FormData(form);
     formData.set("mode", "poll");
-    const response = await fetch("/api/iuran/import", {
+    const response = await executeRequest(() => fetch("/api/iuran/import", {
       method: "POST",
       headers: {
         "X-Import-Mode": "poll",
       },
       body: formData,
-    });
+    }));
 
     if (!response.ok) {
       const payload = await response.json().catch(() => null);
@@ -197,10 +198,10 @@ export function ImportContributionForm() {
     });
 
     try {
-      const response = await fetch("/api/iuran/import", {
+      const response = await executeRequest(() => fetch("/api/iuran/import", {
         method: "POST",
         body: formData,
-      });
+      }));
 
       if (!response.ok) {
         await startPollingFallback(form);
@@ -387,8 +388,9 @@ export function ImportContributionForm() {
               disabled={state.running}
               className="inline-flex items-center gap-2 rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
-              <Upload className="h-4 w-4" />
-              {state.running ? (state.polling ? "Memproses via polling..." : "Memproses...") : "Mulai Import"}
+              <ActionLabel action="import">
+                {state.running ? (state.polling ? "Memproses via polling..." : "Memproses...") : "Mulai Import"}
+              </ActionLabel>
             </button>
             <p className="text-sm text-slate-600">{state.message}</p>
           </div>

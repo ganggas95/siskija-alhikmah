@@ -17,6 +17,7 @@ import {
 } from "@/lib/table-query";
 import { parseSortParam, type SortState } from "@/lib/table-sort";
 import { SortableHeader } from "@/components/table/sortable-header";
+import { ActionLabel } from "@/components/ui/action-label";
 
 export default async function RegionPage({
   searchParams,
@@ -85,13 +86,13 @@ export default async function RegionPage({
                   href="/wilayah/tambah"
                   className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
                 >
-                  Tambah Wilayah
+                  <ActionLabel action="add">Tambah Wilayah</ActionLabel>
                 </Link>
                 <Link
                   href="/wilayah"
                   className="text-sm font-medium text-green-800"
                 >
-                  Reset
+                  <ActionLabel action="reset">Reset</ActionLabel>
                 </Link>
               </div>
             </div>
@@ -112,7 +113,7 @@ export default async function RegionPage({
                 <option value="inactive">Nonaktif</option>
               </select>
               <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                Terapkan
+                <ActionLabel action="search">Terapkan</ActionLabel>
               </button>
             </ResponsiveInlineGrid>
           </div>
@@ -147,7 +148,7 @@ export default async function RegionPage({
                       href={`/wilayah/${region.id}/edit`}
                       className="text-sm font-medium text-green-800"
                     >
-                      Edit
+                      <ActionLabel action="edit">Edit</ActionLabel>
                     </Link>
                     <DeleteRegionForm regionId={region.id} />
                   </div>
@@ -207,7 +208,7 @@ export default async function RegionPage({
                           href={`/wilayah/${region.id}/edit`}
                           className="text-sm font-medium text-green-800"
                         >
-                          Edit
+                        <ActionLabel action="edit">Edit</ActionLabel>
                         </Link>
                         <DeleteRegionForm regionId={region.id} />
                       </div>

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { KeyRound } from "lucide-react";
 
 import { changePasswordAction } from "@/app/(app)/profil/actions";
+import { LoadingButton } from "@/components/form/loading-button";
 
 const initialState = {} as {
   error?: string;
@@ -44,14 +45,15 @@ export function ChangePasswordForm() {
           </p>
         ) : null}
 
-        <button
+        <LoadingButton
           type="submit"
-          disabled={pending}
+          loading={pending}
+          loadingLabel="Memproses..."
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           <KeyRound className="h-4 w-4" />
-          {pending ? "Memproses..." : "Simpan Password Baru"}
-        </button>
+          Simpan Password Baru
+        </LoadingButton>
       </div>
     </form>
   );

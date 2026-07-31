@@ -19,6 +19,7 @@ import { ExportPaymentModal } from "./_components/export-payment-modal";
 import { ImportHouseholdModal } from "./_components/import-household-modal";
 import { DeleteHouseholdForm } from "./_components/delete-household-form";
 import { buildHouseholdWhere } from "@/modules/households/filters";
+import { ActionLabel } from "@/components/ui/action-label";
 
 export default async function HouseholdPage({
   searchParams,
@@ -95,7 +96,7 @@ export default async function HouseholdPage({
                   href="/jamaah/tambah"
                   className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
                 >
-                  Tambah Jamaah
+                  <ActionLabel action="add">Tambah Jamaah</ActionLabel>
                 </Link>
               </div>
             </div>
@@ -112,7 +113,7 @@ export default async function HouseholdPage({
                 {disabilityFilter ? <input type="hidden" name="disability" value={disabilityFilter} /> : null}
                 {elderlyFilter ? <input type="hidden" name="elderly" value={elderlyFilter} /> : null}
                 <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                  Cari
+                  <ActionLabel action="search">Cari</ActionLabel>
                 </button>
               </form>
               <div className="flex gap-3">
@@ -175,7 +176,7 @@ export default async function HouseholdPage({
                   </div>
                 </TableFilterModal>
                 <Link href="/jamaah" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
-                  Reset
+                  <ActionLabel action="reset">Reset</ActionLabel>
                 </Link>
               </div>
             </div>
@@ -214,7 +215,7 @@ export default async function HouseholdPage({
                         href={`/jamaah/${household.id}/edit`}
                         className="text-sm font-medium text-green-800"
                       >
-                        Edit
+                        <ActionLabel action="edit">Edit</ActionLabel>
                       </Link>
                       <DeleteHouseholdForm householdId={household.id} />
                     </div>
@@ -290,7 +291,7 @@ export default async function HouseholdPage({
                           href={`/jamaah/${household.id}/edit`}
                           className="text-sm font-medium text-green-800"
                         >
-                          Edit
+                          <ActionLabel action="edit">Edit</ActionLabel>
                         </Link>
                         <DeleteHouseholdForm householdId={household.id} />
                       </div>
