@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { useAsyncRequest } from "@/components/app/request-state";
+import { ActionLabel } from "@/components/ui/action-label";
 
 type ExportPaymentModalProps = {
   query?: string;
@@ -94,7 +95,7 @@ export function ExportPaymentModal({
           type="button"
           className="rounded-xl border border-green-700 bg-white px-4 py-3 text-sm font-semibold text-green-800"
         >
-          Export Pembayaran
+          <ActionLabel action="export">Export Pembayaran</ActionLabel>
         </button>
       </DialogTrigger>
       <DialogContent>
@@ -141,7 +142,7 @@ export function ExportPaymentModal({
                 disabled={isLoading}
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700"
               >
-                Batal
+                <ActionLabel action="cancel">Batal</ActionLabel>
               </button>
             </DialogClose>
             <button
@@ -149,7 +150,9 @@ export function ExportPaymentModal({
               disabled={isLoading}
               className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
             >
-              {isLoading ? "Mengekspor..." : "Export"}
+              <ActionLabel action="export">
+                {isLoading ? "Mengekspor..." : "Export"}
+              </ActionLabel>
             </button>
           </DialogFooter>
         </form>

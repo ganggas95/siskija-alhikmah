@@ -3,8 +3,8 @@ import { ShieldUser } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { MobileSidebarDrawer } from "@/components/app/mobile-sidebar-drawer";
 import { LogoutButton } from "@/components/app/logout-button";
+import { MobileSidebarDrawer } from "@/components/app/mobile-sidebar-drawer";
 import { SidebarNav, type SidebarNavGroup } from "@/components/app/sidebar-nav";
 import { requireSession, rolePermissions } from "@/lib/rbac";
 
@@ -151,7 +151,7 @@ export default async function AppLayout({
             <span className="rounded-full bg-green-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-green-800">
               {user.role}
             </span>
-            <LogoutButton className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-50" />
+            <LogoutButton className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 font-medium text-slate-50 transition hover:text-slate-700 hover:bg-slate-50" />
           </div>
         </div>
       </header>

@@ -1,8 +1,9 @@
-import { ArrowUpCircle, FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 import { PermissionKey } from "@prisma/client";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/app/page-header";
+import { ActionLabel } from "@/components/ui/action-label";
 import { requirePermission } from "@/lib/rbac";
 import { ImportContributionForm } from "./_components/import-contribution-form";
 
@@ -26,11 +27,9 @@ export default async function ImportContributionPaymentsPage() {
           href="/iuran/pembayaran"
           className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700"
         >
-          <ArrowUpCircle className="h-4 w-4" />
-          Kembali ke Pembayaran
+          <ActionLabel action="cancel">Kembali ke Pembayaran</ActionLabel>
         </Link>
       </div>
     </section>
   );
 }
-

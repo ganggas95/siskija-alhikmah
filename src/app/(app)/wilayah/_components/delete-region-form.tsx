@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from "react";
 
 import { LoadingButton } from "@/components/form/loading-button";
+import { ActionLabel } from "@/components/ui/action-label";
 import { useToast } from "@/components/ui/toast";
 import type { ActionResult } from "@/lib/action-result";
 import { deleteRegionAction } from "../actions";
@@ -48,7 +49,7 @@ export function DeleteRegionForm({ regionId }: DeleteRegionFormProps) {
         variant="link"
         className="text-sm font-medium text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Hapus
+        <ActionLabel action="delete">Hapus</ActionLabel>
       </LoadingButton>
     </form>
   );

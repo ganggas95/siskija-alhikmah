@@ -2,9 +2,8 @@
 
 import type { FormEvent } from "react";
 import { useRef, useState } from "react";
-import { Upload } from "lucide-react";
-
 import { useAsyncRequest } from "@/components/app/request-state";
+import { ActionLabel } from "@/components/ui/action-label";
 import { Progress } from "@/components/ui/progress";
 
 type ImportSummary = {
@@ -389,8 +388,9 @@ export function ImportContributionForm() {
               disabled={state.running}
               className="inline-flex items-center gap-2 rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
-              <Upload className="h-4 w-4" />
-              {state.running ? (state.polling ? "Memproses via polling..." : "Memproses...") : "Mulai Import"}
+              <ActionLabel action="import">
+                {state.running ? (state.polling ? "Memproses via polling..." : "Memproses...") : "Mulai Import"}
+              </ActionLabel>
             </button>
             <p className="text-sm text-slate-600">{state.message}</p>
           </div>

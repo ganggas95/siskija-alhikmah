@@ -16,6 +16,7 @@ import {
   ScrollText,
   Users,
 } from "lucide-react";
+import { ActionLabel } from "@/components/ui/action-label";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/app/page-header";
@@ -260,7 +261,7 @@ export default async function DashboardPage({
               href="/dashboard"
               className="text-sm font-medium text-green-800"
             >
-              Reset
+              <ActionLabel action="reset">Reset</ActionLabel>
             </Link>
           </div>
           <ResponsiveInlineGrid as="form">
@@ -283,7 +284,7 @@ export default async function DashboardPage({
               ))}
             </select>
             <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-              Terapkan
+              <ActionLabel action="search">Terapkan</ActionLabel>
             </button>
           </ResponsiveInlineGrid>
           <div className="flex items-center justify-between">

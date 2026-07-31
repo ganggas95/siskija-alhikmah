@@ -4,6 +4,7 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 
 import { SubmitButton } from "@/components/form/submit-button";
+import { ActionLabel } from "@/components/ui/action-label";
 import { cn } from "@/lib/utils";
 
 type FormActionsProps = {
@@ -28,10 +29,10 @@ export function FormActions({
           pending && "pointer-events-none opacity-50",
         )}
       >
-        Batalkan
+        <ActionLabel action="cancel">Batalkan</ActionLabel>
         </Link>
       <SubmitButton pendingLabel="Menyimpan..." className="w-full sm:w-auto">
-        {submitLabel}
+        <ActionLabel action="submit">{submitLabel}</ActionLabel>
       </SubmitButton>
     </div>
   );

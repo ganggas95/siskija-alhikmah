@@ -1,5 +1,6 @@
 import { BillStatus, PermissionKey, Prisma } from "@prisma/client";
 import { ScrollText } from "lucide-react";
+import { ActionLabel } from "@/components/ui/action-label";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/app/page-header";
@@ -108,7 +109,7 @@ export default async function ContributionBillsPage({
                 href="/iuran/tagihan/generate"
                 className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
               >
-                Generate Tagihan
+                <ActionLabel action="add">Generate Tagihan</ActionLabel>
               </Link>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -124,7 +125,7 @@ export default async function ContributionBillsPage({
                 {yearFilter ? <input type="hidden" name="year" value={yearFilter} /> : null}
                 {monthFilter ? <input type="hidden" name="month" value={monthFilter} /> : null}
                 <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                  Cari
+                  <ActionLabel action="search">Cari</ActionLabel>
                 </button>
               </form>
               <div className="flex gap-3">
@@ -190,7 +191,7 @@ export default async function ContributionBillsPage({
                   </div>
                 </TableFilterModal>
                 <Link href="/iuran/tagihan" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
-                  Reset
+                  <ActionLabel action="reset">Reset</ActionLabel>
                 </Link>
               </div>
             </div>

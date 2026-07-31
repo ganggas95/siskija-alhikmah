@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 
 import { PageHeader } from "@/components/app/page-header";
 import { SubmitButton } from "@/components/form/submit-button";
+import { ActionLabel } from "@/components/ui/action-label";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
@@ -106,7 +107,7 @@ export default async function ExpensePage({
                 href="/kas-keluar/tambah"
                 className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
               >
-                Tambah Kas Keluar
+                <ActionLabel action="add">Tambah Kas Keluar</ActionLabel>
               </Link>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -121,7 +122,7 @@ export default async function ExpensePage({
                 {statusFilter ? <input type="hidden" name="status" value={statusFilter} /> : null}
                 {methodFilter ? <input type="hidden" name="method" value={methodFilter} /> : null}
                 <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                  Cari
+                  <ActionLabel action="search">Cari</ActionLabel>
                 </button>
               </form>
               <div className="flex gap-3">
@@ -178,7 +179,7 @@ export default async function ExpensePage({
                   </div>
                 </TableFilterModal>
                 <Link href="/kas-keluar" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
-                  Reset
+                  <ActionLabel action="reset">Reset</ActionLabel>
                 </Link>
               </div>
             </div>
@@ -208,7 +209,7 @@ export default async function ExpensePage({
                       <form action={verifyExpenseAction}>
                         <input type="hidden" name="expenseId" value={transaction.id} />
                         <SubmitButton pendingLabel="Memverifikasi..." className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700">
-                          Verifikasi
+                          <ActionLabel action="submit">Verifikasi</ActionLabel>
                         </SubmitButton>
                       </form>
                     ) : null}
@@ -218,12 +219,12 @@ export default async function ExpensePage({
                           href={`/kas-keluar/${transaction.id}/edit`}
                           className="rounded-lg bg-green-800 px-3 py-2 text-xs font-semibold text-white"
                         >
-                          Edit
+                          <ActionLabel action="edit">Edit</ActionLabel>
                         </Link>
                         <form action={async (formData) => { await deleteExpenseAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus transaksi kas keluar ini?')) e.preventDefault(); }}>
                           <input type="hidden" name="id" value={transaction.id} />
                           <SubmitButton pendingLabel="Menghapus..." className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-600">
-                            Hapus
+                            <ActionLabel action="delete">Hapus</ActionLabel>
                           </SubmitButton>
                         </form>
                       </>
@@ -297,7 +298,7 @@ export default async function ExpensePage({
                           <form action={verifyExpenseAction}>
                             <input type="hidden" name="expenseId" value={transaction.id} />
                             <SubmitButton pendingLabel="Memverifikasi..." className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700">
-                              Verifikasi
+                            <ActionLabel action="submit">Verifikasi</ActionLabel>
                             </SubmitButton>
                           </form>
                         ) : null}
@@ -311,11 +312,11 @@ export default async function ExpensePage({
                             href={`/kas-keluar/${transaction.id}/edit`}
                             className="text-sm font-medium text-green-800"
                           >
-                            Edit
+                            <ActionLabel action="edit">Edit</ActionLabel>
                           </Link>
                           <form action={async (formData) => { await deleteExpenseAction(formData); }} onSubmit={(e) => { if (!confirm('Hapus transaksi kas keluar ini?')) e.preventDefault(); }}>
                             <input type="hidden" name="id" value={transaction.id} />
-                            <SubmitButton pendingLabel="Menghapus..." className="text-sm font-medium text-red-600">Hapus</SubmitButton>
+                        <SubmitButton pendingLabel="Menghapus..." className="text-sm font-medium text-red-600"><ActionLabel action="delete">Hapus</ActionLabel></SubmitButton>
                           </form>
                         </div>
                       ) : (

@@ -1,6 +1,5 @@
 "use client";
 
-import { Filter } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { ActionLabel } from "@/components/ui/action-label";
 
 type TableFilterModalProps = {
   title: string;
@@ -39,8 +39,7 @@ export function TableFilterModal({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant="outline" className="gap-2">
-          <Filter className="h-4 w-4" />
-          Filter
+          <ActionLabel action="filter">Filter</ActionLabel>
           {activeCount > 0 ? <Badge variant="secondary">{activeCount}</Badge> : null}
         </Button>
       </DialogTrigger>
@@ -64,10 +63,12 @@ export function TableFilterModal({
               disabled={submitting}
               onClick={() => setOpen(false)}
             >
-              Batal
+              <ActionLabel action="cancel">Batal</ActionLabel>
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Menerapkan..." : submitLabel}
+              <ActionLabel action="submit">
+                {submitting ? "Menerapkan..." : submitLabel}
+              </ActionLabel>
             </Button>
           </DialogFooter>
         </form>

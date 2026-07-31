@@ -18,6 +18,7 @@ import {
   type SearchParamsInput,
 } from "@/lib/table-query";
 import { DeletePaymentForm } from "./_components/delete-payment-form";
+import { ActionLabel } from "@/components/ui/action-label";
 
 export default async function ContributionPaymentsPage({
   searchParams,
@@ -95,13 +96,13 @@ export default async function ContributionPaymentsPage({
                   href="/iuran/pembayaran/import"
                   className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700"
                 >
-                  Import Excel
+                  <ActionLabel action="import">Import Excel</ActionLabel>
                 </Link>
                 <Link
                   href="/iuran/pembayaran/tambah"
                   className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white"
                 >
-                  Input Pembayaran
+                  <ActionLabel action="add">Input Pembayaran</ActionLabel>
                 </Link>
               </div>
             </div>
@@ -117,7 +118,7 @@ export default async function ContributionPaymentsPage({
                 {yearFilter ? <input type="hidden" name="year" value={yearFilter} /> : null}
                 {monthFilter ? <input type="hidden" name="month" value={monthFilter} /> : null}
                 <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                  Cari
+                  <ActionLabel action="search">Cari</ActionLabel>
                 </button>
               </form>
               <div className="flex gap-3">
@@ -168,7 +169,7 @@ export default async function ContributionPaymentsPage({
                   </div>
                 </TableFilterModal>
                 <Link href="/iuran/pembayaran" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
-                  Reset
+                  <ActionLabel action="reset">Reset</ActionLabel>
                 </Link>
               </div>
             </div>

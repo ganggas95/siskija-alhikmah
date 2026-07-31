@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useToast } from "@/components/ui/toast";
 import { LoadingButton } from "@/components/form/loading-button";
+import { ActionLabel } from "@/components/ui/action-label";
 import type { ActionResult } from "@/lib/action-result";
 import { deleteHouseholdAction } from "../actions";
 
@@ -51,7 +52,7 @@ export function DeleteHouseholdForm({
         loadingLabel="Menghapus..."
         className={className ?? "text-sm font-medium text-red-600"}
       >
-        Hapus
+        <ActionLabel action="delete">Hapus</ActionLabel>
       </LoadingButton>
     </form>
   );

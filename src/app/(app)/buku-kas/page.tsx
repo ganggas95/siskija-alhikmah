@@ -1,5 +1,6 @@
 import { LedgerDirection, PermissionKey } from "@prisma/client";
 import { BookOpenText } from "lucide-react";
+import { ActionLabel } from "@/components/ui/action-label";
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
 
@@ -85,7 +86,7 @@ export default async function LedgerPage({
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-slate-900">Daftar Ledger</h3>
             <Link href="/buku-kas" className="text-sm font-medium text-green-800">
-              Reset
+              <ActionLabel action="reset">Reset</ActionLabel>
             </Link>
           </div>
           <ResponsiveInlineGrid as="form">
@@ -108,7 +109,7 @@ export default async function LedgerPage({
               ))}
             </select>
             <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-              Terapkan
+              <ActionLabel action="search">Terapkan</ActionLabel>
             </button>
           </ResponsiveInlineGrid>
         </div>

@@ -1,5 +1,6 @@
 import { BillStatus, PermissionKey, Prisma } from "@prisma/client";
 import { HandCoins } from "lucide-react";
+import { ActionLabel } from "@/components/ui/action-label";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/app/page-header";
@@ -115,7 +116,7 @@ export default async function ContributionReportPage({
               {yearFilter ? <input type="hidden" name="year" value={yearFilter} /> : null}
               {monthFilter ? <input type="hidden" name="month" value={monthFilter} /> : null}
               <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                Cari
+                  <ActionLabel action="search">Cari</ActionLabel>
               </button>
             </form>
             <div className="flex gap-3">
@@ -181,7 +182,7 @@ export default async function ContributionReportPage({
                 </div>
               </TableFilterModal>
               <Link href="/laporan/iuran" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
-                Reset
+                  <ActionLabel action="reset">Reset</ActionLabel>
               </Link>
             </div>
           </div>
