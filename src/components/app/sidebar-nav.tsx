@@ -17,6 +17,7 @@ import {
   MapPinned,
   ScrollText,
   ShieldUser,
+  Settings,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -41,7 +42,8 @@ type IconName =
   | "ledger"
   | "cashReport"
   | "contributionReport"
-  | "user";
+  | "user"
+  | "settings";
 
 export type SidebarNavGroup = {
   label: string;
@@ -65,6 +67,7 @@ const iconMap: Record<IconName, LucideIcon> = {
   cashReport: FileBarChart2,
   contributionReport: HandCoins,
   user: ShieldUser,
+  settings: Settings,
 };
 
 function isItemActive(pathname: string, href: string) {

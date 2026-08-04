@@ -22,6 +22,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { ResponsiveInlineGrid } from "@/components/layout/responsive-inline-grid";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requireSession } from "@/lib/rbac";
@@ -331,7 +332,11 @@ export default async function DashboardPage({
             ))
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-              Belum ada mutasi yang cocok dengan filter saat ini.
+              <TableEmptyState
+                icon={BookOpenText}
+                title="Belum ada mutasi kas"
+                description="Mutasi yang sesuai dengan filter akan tampil di sini."
+              />
             </div>
           )}
         </div>
@@ -348,6 +353,17 @@ export default async function DashboardPage({
               </tr>
             </thead>
             <tbody>
+              {ledger.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <TableEmptyState
+                      icon={BookOpenText}
+                      title="Belum ada mutasi kas"
+                      description="Coba ubah filter untuk mencari mutasi kas."
+                    />
+                  </td>
+                </tr>
+              ) : null}
               {ledger.length > 0 ? (
                 ledger.map((entry) => (
                   <tr key={entry.id} className="border-b border-slate-100">
@@ -376,7 +392,11 @@ export default async function DashboardPage({
                     colSpan={5}
                     className="px-3 py-8 text-center text-slate-500"
                   >
-                    Belum ada mutasi yang cocok dengan filter saat ini.
+                    <TableEmptyState
+                      icon={BookOpenText}
+                      title="Belum ada mutasi kas"
+                      description="Coba ubah filter untuk mencari mutasi kas."
+                    />
                   </td>
                 </tr>
               )}

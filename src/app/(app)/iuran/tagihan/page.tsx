@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { SortableHeader } from "@/components/table/sortable-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
@@ -222,7 +223,11 @@ export default async function ContributionBillsPage({
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                Belum ada tagihan yang cocok.
+              <TableEmptyState
+                icon={ScrollText}
+                title="Belum ada tagihan"
+                description="Tagihan yang sesuai dengan filter akan tampil di sini."
+              />
               </div>
             )}
           </div>
@@ -244,6 +249,17 @@ export default async function ContributionBillsPage({
                 </tr>
               </thead>
               <tbody>
+                {bills.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>
+                      <TableEmptyState
+                        icon={ScrollText}
+                        title="Belum ada tagihan"
+                        description="Coba ubah filter atau generate tagihan baru."
+                      />
+                    </td>
+                  </tr>
+                ) : null}
                 {bills.map((bill) => (
                   <tr key={bill.id} className="border-b border-slate-100">
                     <td className="px-3 py-3">{`${String(bill.month).padStart(2, "0")}/${bill.year}`}</td>

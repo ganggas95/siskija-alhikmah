@@ -93,6 +93,17 @@ const navigationGroups: SidebarNavGroup[] = [
       },
     ],
   },
+  {
+    label: "Pengaturan",
+    items: [
+      {
+        href: "/pengaturan/profil-masjid",
+        label: "Profil Masjid & Organisasi",
+        icon: "settings",
+        permission: PermissionKey.MANAGE_SETTINGS,
+      },
+    ],
+  },
 ];
 
 export default async function AppLayout({

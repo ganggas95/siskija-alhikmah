@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/form/submit-button";
 import { ActionLabel } from "@/components/ui/action-label";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
@@ -234,7 +235,11 @@ export default async function IncomePage({
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                Belum ada transaksi kas masuk yang cocok.
+                <TableEmptyState
+                  icon={ArrowDownCircle}
+                  title="Belum ada transaksi kas masuk"
+                  description="Transaksi yang sesuai dengan filter akan tampil di sini."
+                />
               </div>
             )}
           </div>
@@ -283,6 +288,17 @@ export default async function IncomePage({
                 </tr>
               </thead>
               <tbody>
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <TableEmptyState
+                        icon={ArrowDownCircle}
+                        title="Belum ada transaksi kas masuk"
+                        description="Coba ubah filter atau tambahkan transaksi baru."
+                      />
+                    </td>
+                  </tr>
+                ) : null}
                 {transactions.map((transaction) => (
                   <tr key={transaction.id} className="border-b border-slate-100 align-top">
                     <td className="px-3 py-3 font-medium text-slate-900">{transaction.transactionNumber}</td>

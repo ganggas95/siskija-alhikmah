@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { ResponsiveInlineGrid } from "@/components/layout/responsive-inline-grid";
 import { SortableHeader } from "@/components/table/sortable-header";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
@@ -153,7 +154,11 @@ export default async function LedgerPage({
             ))
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-              Belum ada entry ledger yang cocok.
+              <TableEmptyState
+                icon={BookOpenText}
+                title="Belum ada entry ledger"
+                description="Mutasi kas yang sesuai dengan filter akan tampil di sini."
+              />
             </div>
           )}
         </div>
@@ -174,6 +179,17 @@ export default async function LedgerPage({
               </tr>
             </thead>
             <tbody>
+              {pagedRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <TableEmptyState
+                      icon={BookOpenText}
+                      title="Belum ada entry ledger"
+                      description="Coba ubah filter untuk mencari mutasi kas."
+                    />
+                  </td>
+                </tr>
+              ) : null}
               {pagedRows.map(({ entry, runningBalance }) => (
                 <tr key={entry.id} className="border-b border-slate-100">
                   <td className="px-3 py-3">{entry.transactionDate.toLocaleDateString("id-ID")}</td>

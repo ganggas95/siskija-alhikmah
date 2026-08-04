@@ -13,6 +13,12 @@ import Decimal from "decimal.js";
 import { db } from "@/lib/db";
 import { requirePermission, requireSession } from "@/lib/rbac";
 import { recordContributionPayment } from "@/modules/contributions/services/record-payment";
+import {
+  approveContributionPayment,
+  approveContributionPayments,
+  cancelContributionPayment,
+  cancelContributionPayments,
+} from "@/modules/contributions/services/approve-payment";
 import type { ActionResult } from "@/lib/action-result";
 
 function getRedirectTo(formData: FormData, fallback: string) {
@@ -85,6 +91,13 @@ export async function deletePaymentAction(
 
     if (!payment || payment.canceledAt) {
       return { success: false, message: "Data pembayaran tidak ditemukan." };
+    }
+
+    if (payment.status === ContributionPaymentStatus.DRAFT) {
+      return {
+        success: false,
+        message: "Gunakan aksi Batalkan untuk pembayaran berstatus DRAFT.",
+      };
     }
 
     // Only the recorder can delete, unless Admin
@@ -186,4 +199,72 @@ export async function deletePaymentAction(
         error instanceof Error ? error.message : "Terjadi kesalahan server.",
     };
   }
+}
+
+function getPaymentIds(formData: FormData) {
+  return [...new Set(formData.getAll("paymentId").map(String).filter(Boolean))];
+}
+
+export async function approvePaymentAction(formData: FormData): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.VERIFY_TRANSACTIONS);
+
+  try {
+    const paymentId = String(formData.get("paymentId") ?? "");
+    if (!paymentId) return { success: false, message: "ID pembayaran tidak ditemukan." };
+    await approveContributionPayment({ paymentId, actorId: user.id });
+    revalidateContributionPaymentPaths();
+    return { success: true, message: "Pembayaran berhasil di-Approve." };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Terjadi kesalahan server." };
+  }
+}
+
+export async function cancelPaymentAction(formData: FormData): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.VERIFY_TRANSACTIONS);
+
+  try {
+    const paymentId = String(formData.get("paymentId") ?? "");
+    if (!paymentId) return { success: false, message: "ID pembayaran tidak ditemukan." };
+    await cancelContributionPayment({ paymentId, actorId: user.id });
+    revalidateContributionPaymentPaths();
+    return { success: true, message: "Pembayaran berhasil dibatalkan." };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Terjadi kesalahan server." };
+  }
+}
+
+export async function approveSelectedPaymentsAction(formData: FormData): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.VERIFY_TRANSACTIONS);
+  const paymentIds = getPaymentIds(formData);
+  if (!paymentIds.length) return { success: false, message: "Pilih minimal satu pembayaran." };
+
+  try {
+    await approveContributionPayments(paymentIds, user.id);
+    revalidateContributionPaymentPaths();
+    return { success: true, message: `${paymentIds.length} pembayaran berhasil di-Approve.` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Bulk Approve gagal." };
+  }
+}
+
+export async function cancelSelectedPaymentsAction(formData: FormData): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.VERIFY_TRANSACTIONS);
+  const paymentIds = getPaymentIds(formData);
+  if (!paymentIds.length) return { success: false, message: "Pilih minimal satu pembayaran." };
+
+  try {
+    await cancelContributionPayments(paymentIds, user.id);
+    revalidateContributionPaymentPaths();
+    return { success: true, message: `${paymentIds.length} pembayaran berhasil dibatalkan.` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Bulk Cancel gagal." };
+  }
+}
+
+function revalidateContributionPaymentPaths() {
+  revalidatePath("/iuran/pembayaran");
+  revalidatePath("/dashboard");
+  revalidatePath("/buku-kas");
+  revalidatePath("/laporan/iuran");
+  revalidatePath("/laporan/kas-masuk");
 }

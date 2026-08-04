@@ -44,6 +44,13 @@ erDiagram
 - `ExpenseTransaction(status, transactionDate)`
 - `AuditLog(entity, entityId)`
 
+## Pengaturan Iuran
+
+- `MosqueProfile.defaultContributionFee` adalah nominal iuran normal.
+- `MosqueProfile.specialContributionFee` adalah nominal tunggal untuk lansia atau disabilitas.
+- Import XLSX dan generate tagihan mengambil nominal dari profil tersebut ketika tagihan belum ada.
+- Tagihan existing tidak ditimpa. Service `repairLegacyZeroContributionBills` hanya memperbaiki tagihan bernilai nol yang belum memiliki pembayaran.
+
 ## Environment Untuk Database
 
 - Development lokal memakai `.env.development.local`.

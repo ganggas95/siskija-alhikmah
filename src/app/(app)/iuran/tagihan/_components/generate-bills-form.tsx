@@ -10,10 +10,14 @@ import { generateBillsAction } from "../actions";
 
 type GenerateBillsFormProps = {
   redirectTo?: string;
+  normalAmount?: string;
+  specialAmount?: string;
 };
 
 export function GenerateBillsForm({
   redirectTo = "/iuran/tagihan",
+  normalAmount = "0",
+  specialAmount = "0",
 }: GenerateBillsFormProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -78,16 +82,9 @@ export function GenerateBillsForm({
             <label className="text-sm font-medium text-slate-700">
               Nominal Normal <span className="text-xs text-slate-500">(Rp)</span>
             </label>
-            <input
-              name="amountNormal"
-              type="number"
-              min={0}
-              defaultValue={7000}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-              required
-            />
+            <p className="rounded-xl bg-slate-50 px-4 py-3 text-lg font-semibold text-slate-900">Rp{new Intl.NumberFormat("id-ID").format(Number(normalAmount))}</p>
             <p className="text-xs text-slate-500">
-              Untuk jamaah tanpa status disabilitas/lansia
+              Untuk jamaah tanpa status disabilitas/lansia. Diambil dari pengaturan organisasi.
             </p>
           </div>
 
@@ -95,16 +92,9 @@ export function GenerateBillsForm({
             <label className="text-sm font-medium text-slate-700">
               Nominal Disabilitas &amp; Lansia <span className="text-xs text-slate-500">(Rp)</span>
             </label>
-            <input
-              name="amountDiscounted"
-              type="number"
-              min={0}
-              defaultValue={5000}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
-              required
-            />
+            <p className="rounded-xl bg-slate-50 px-4 py-3 text-lg font-semibold text-slate-900">Rp{new Intl.NumberFormat("id-ID").format(Number(specialAmount))}</p>
             <p className="text-xs text-slate-500">
-              Untuk jamaah dengan status disabilitas atau lansia
+              Untuk jamaah dengan status disabilitas atau lansia. Diambil dari pengaturan organisasi.
             </p>
           </div>
         </div>
