@@ -1,5 +1,4 @@
 import {
-  BillStatus,
   CategoryType,
   ContributionPaymentStatus,
   IncomeStatus,
@@ -7,9 +6,14 @@ import {
   LedgerSourceType,
   type Prisma,
 } from "@prisma/client";
-import Decimal from "decimal.js";
 
+import { createAuditLog } from "@/lib/audit";
 import { db } from "@/lib/db";
+import {
+  deriveContributionBillStatus,
+  refreshContributionBillStatus,
+} from "@/modules/contributions/domain/bill-status";
+import { postLedgerEntry, reverseLedgerEntries } from "@/modules/ledger";
 import { createTransactionNumber } from "@/modules/shared/numbering";
 
 type TransactionClient = Prisma.TransactionClient;
@@ -22,43 +26,10 @@ const paymentTransactionOptions = {
 type PaymentActionInput = {
   paymentId: string;
   actorId: string;
+  reason?: string;
 };
 
-export function deriveContributionBillStatus(amountDue: Decimal, totalPaid: Decimal) {
-  if (totalPaid.lte(0)) return BillStatus.BELUM_BAYAR;
-  if (totalPaid.greaterThanOrEqualTo(amountDue)) return BillStatus.LUNAS;
-  return BillStatus.SEBAGIAN;
-}
-
-async function refreshBillStatus(tx: TransactionClient, billId: string) {
-  const bill = await tx.contributionBill.findUnique({
-    where: { id: billId },
-    select: { amountDue: true },
-  });
-
-  if (!bill) return;
-
-  const payments = await tx.contributionPayment.findMany({
-    where: {
-      billId,
-      canceledAt: null,
-      status: ContributionPaymentStatus.VERIFIED,
-    },
-    select: { amountPaid: true },
-  });
-
-  const totalPaid = payments.reduce(
-    (total, payment) => total.plus(payment.amountPaid.toString()),
-    new Decimal(0),
-  );
-
-  await tx.contributionBill.update({
-    where: { id: billId },
-    data: {
-      status: deriveContributionBillStatus(new Decimal(bill.amountDue.toString()), totalPaid),
-    },
-  });
-}
+export { deriveContributionBillStatus };
 
 async function approvePaymentInTransaction(
   tx: TransactionClient,
@@ -71,7 +42,7 @@ async function approvePaymentInTransaction(
 
   if (!payment) throw new Error("Pembayaran tidak ditemukan.");
   if (payment.status !== ContributionPaymentStatus.DRAFT || payment.canceledAt) {
-    throw new Error("Hanya pembayaran berstatus DRAFT yang dapat di-Approve.");
+    throw new Error("Hanya pembayaran berstatus DRAFT yang dapat di-approve.");
   }
   if (payment.incomeTransactionId) {
     throw new Error("Pembayaran ini sudah memiliki transaksi kas terkait.");
@@ -88,7 +59,7 @@ async function approvePaymentInTransaction(
 
   const income = await tx.incomeTransaction.create({
     data: {
-      transactionNumber: createTransactionNumber("INC-IUR"),
+      transactionNumber: createTransactionNumber("INC-IUR", payment.paymentDate),
       transactionDate: payment.paymentDate,
       categoryId: category.id,
       sourceName: payment.bill.household.headName,
@@ -109,23 +80,21 @@ async function approvePaymentInTransaction(
     },
   });
 
-  await tx.cashLedger.create({
-    data: {
-      transactionDate: payment.paymentDate,
-      direction: LedgerDirection.DEBIT,
-      sourceType: LedgerSourceType.CONTRIBUTION_PAYMENT,
-      sourceId: payment.id,
-      transactionNumber: income.transactionNumber,
-      description: `Pembayaran iuran ${payment.bill.household.headName}`,
-      amount: payment.amountPaid,
-      incomeId: income.id,
-    },
+  await postLedgerEntry(tx, {
+    transactionDate: payment.paymentDate,
+    direction: LedgerDirection.DEBIT,
+    sourceType: LedgerSourceType.CONTRIBUTION_PAYMENT,
+    sourceId: payment.id,
+    transactionNumber: income.transactionNumber,
+    description: `Pembayaran iuran ${payment.bill.household.headName}`,
+    amount: payment.amountPaid,
+    incomeId: income.id,
   });
 
-  await refreshBillStatus(tx, payment.billId);
+  const billStatus = await refreshContributionBillStatus(tx, payment.billId);
 
-  await tx.auditLog.create({
-    data: {
+  await createAuditLog(
+    {
       userId: input.actorId,
       action: "APPROVE_CONTRIBUTION_PAYMENT",
       entity: "ContributionPayment",
@@ -135,9 +104,11 @@ async function approvePaymentInTransaction(
         status: ContributionPaymentStatus.VERIFIED,
         amountPaid: payment.amountPaid.toString(),
         incomeTransactionId: income.id,
+        billStatus,
       },
     },
-  });
+    tx,
+  );
 
   return updated;
 }
@@ -154,12 +125,29 @@ async function cancelPaymentInTransaction(
       status: true,
       canceledAt: true,
       amountPaid: true,
+      incomeTransactionId: true,
     },
   });
 
   if (!payment) throw new Error("Pembayaran tidak ditemukan.");
-  if (payment.status !== ContributionPaymentStatus.DRAFT || payment.canceledAt) {
-    throw new Error("Hanya pembayaran berstatus DRAFT yang dapat dibatalkan.");
+  if (payment.status === ContributionPaymentStatus.CANCELED || payment.canceledAt) {
+    throw new Error("Pembayaran sudah dibatalkan.");
+  }
+
+  if (payment.status === ContributionPaymentStatus.VERIFIED && payment.incomeTransactionId) {
+    await tx.incomeTransaction.update({
+      where: { id: payment.incomeTransactionId },
+      data: {
+        status: IncomeStatus.CANCELED,
+        canceledAt: new Date(),
+      },
+    });
+
+    await reverseLedgerEntries(tx, {
+      sourceType: LedgerSourceType.CONTRIBUTION_PAYMENT,
+      sourceId: payment.id,
+      reason: input.reason ?? "Pembayaran iuran dibatalkan",
+    });
   }
 
   const updated = await tx.contributionPayment.update({
@@ -170,22 +158,24 @@ async function cancelPaymentInTransaction(
     },
   });
 
-  await refreshBillStatus(tx, payment.billId);
+  const billStatus = await refreshContributionBillStatus(tx, payment.billId);
 
-  await tx.auditLog.create({
-    data: {
+  await createAuditLog(
+    {
       userId: input.actorId,
       action: "CANCEL_CONTRIBUTION_PAYMENT",
       entity: "ContributionPayment",
       entityId: payment.id,
-      beforeData: { status: ContributionPaymentStatus.DRAFT },
+      beforeData: { status: payment.status },
       afterData: {
         status: ContributionPaymentStatus.CANCELED,
         amountPaid: payment.amountPaid.toString(),
-        reason: "Dibatalkan dari modul pembayaran",
+        reason: input.reason ?? "Dibatalkan dari modul pembayaran",
+        billStatus,
       },
     },
-  });
+    tx,
+  );
 
   return updated;
 }

@@ -1,6 +1,13 @@
-import { IncomeStatus, LedgerDirection, LedgerSourceType } from "@prisma/client";
+import {
+  CategoryType,
+  IncomeStatus,
+  LedgerDirection,
+  LedgerSourceType,
+} from "@prisma/client";
 
+import { createAuditLog } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { postLedgerEntry } from "@/modules/ledger";
 
 type VerifyIncomeInput = {
   incomeId: string;
@@ -10,10 +17,25 @@ type VerifyIncomeInput = {
 export async function verifyIncome(input: VerifyIncomeInput) {
   const income = await db.incomeTransaction.findUnique({
     where: { id: input.incomeId },
+    include: {
+      category: {
+        select: {
+          type: true,
+        },
+      },
+    },
   });
 
   if (!income) {
     throw new Error("Transaksi kas masuk tidak ditemukan.");
+  }
+
+  if (income.status !== IncomeStatus.DRAFT) {
+    throw new Error("Hanya transaksi kas masuk berstatus DRAFT yang dapat diverifikasi.");
+  }
+
+  if (income.category.type !== CategoryType.INCOME) {
+    throw new Error("Kategori transaksi tidak valid untuk kas masuk.");
   }
 
   return db.$transaction(async (tx) => {
@@ -25,35 +47,28 @@ export async function verifyIncome(input: VerifyIncomeInput) {
       },
     });
 
-    await tx.cashLedger.upsert({
-      where: {
-        sourceType_sourceId_isActive: {
-          sourceType: LedgerSourceType.INCOME_TRANSACTION,
-          sourceId: updated.id,
-          isActive: true,
-        },
-      },
-      update: {},
-      create: {
-        transactionDate: updated.transactionDate,
-        direction: LedgerDirection.DEBIT,
-        sourceType: LedgerSourceType.INCOME_TRANSACTION,
-        sourceId: updated.id,
-        transactionNumber: updated.transactionNumber,
-        description: updated.description ?? updated.sourceName,
-        amount: updated.amount,
-        incomeId: updated.id,
-      },
+    await postLedgerEntry(tx, {
+      transactionDate: updated.transactionDate,
+      direction: LedgerDirection.DEBIT,
+      sourceType: LedgerSourceType.INCOME_TRANSACTION,
+      sourceId: updated.id,
+      transactionNumber: updated.transactionNumber,
+      description: updated.description ?? updated.sourceName,
+      amount: updated.amount,
+      incomeId: updated.id,
     });
 
-    await tx.auditLog.create({
-      data: {
+    await createAuditLog(
+      {
         userId: input.actorId,
         action: "VERIFY_INCOME",
         entity: "IncomeTransaction",
         entityId: updated.id,
+        beforeData: { status: income.status },
+        afterData: { status: updated.status },
       },
-    });
+      tx,
+    );
 
     return updated;
   });

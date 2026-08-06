@@ -10,9 +10,49 @@ const loginSchema = z.object({
   password: z.string().min(8, "Password minimal 8 karakter"),
 });
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCK_WINDOW_MS = 15 * 60 * 1000;
+const loginAttemptStore = new Map<
+  string,
+  { attempts: number; lockedUntil: number | null }
+>();
+
+function getLoginAttemptState(email: string) {
+  const key = email.trim().toLowerCase();
+  const current = loginAttemptStore.get(key);
+  const now = Date.now();
+
+  if (!current) {
+    return { key, state: { attempts: 0, lockedUntil: null } };
+  }
+
+  if (current.lockedUntil && current.lockedUntil <= now) {
+    const reset = { attempts: 0, lockedUntil: null };
+    loginAttemptStore.set(key, reset);
+    return { key, state: reset };
+  }
+
+  return { key, state: current };
+}
+
+function registerLoginFailure(email: string) {
+  const { key, state } = getLoginAttemptState(email);
+  const attempts = state.attempts + 1;
+  const lockedUntil =
+    attempts >= MAX_LOGIN_ATTEMPTS ? Date.now() + LOGIN_LOCK_WINDOW_MS : null;
+
+  loginAttemptStore.set(key, { attempts, lockedUntil });
+}
+
+function clearLoginFailures(email: string) {
+  loginAttemptStore.delete(email.trim().toLowerCase());
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
     strategy: "jwt",
+    maxAge: 60 * 60 * 12,
+    updateAge: 60 * 60,
   },
   pages: {
     signIn: "/login",
@@ -31,8 +71,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
+        const normalizedEmail = parsed.data.email.trim().toLowerCase();
+        const { state } = getLoginAttemptState(normalizedEmail);
+
+        if (state.lockedUntil && state.lockedUntil > Date.now()) {
+          return null;
+        }
+
         const user = await db.user.findUnique({
-          where: { email: parsed.data.email },
+          where: { email: normalizedEmail },
           include: {
             userRoles: {
               include: {
@@ -43,6 +90,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!user?.isActive) {
+          registerLoginFailure(normalizedEmail);
           return null;
         }
 
@@ -52,8 +100,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
 
         if (!isValidPassword) {
+          registerLoginFailure(normalizedEmail);
           return null;
         }
+
+        clearLoginFailures(normalizedEmail);
 
         const primaryRole = user.userRoles[0]?.role.key ?? "AUDITOR";
 
@@ -62,6 +113,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           email: user.email,
           role: primaryRole,
+          isActive: user.isActive,
         };
       },
     }),
@@ -70,6 +122,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.role = user.role;
+        token.isActive = user.isActive;
       }
       return token;
     },
@@ -77,6 +130,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.sub!;
         session.user.role = token.role as "ADMIN" | "TREASURER" | "AUDITOR";
+        session.user.isActive = token.isActive as boolean | undefined;
       }
 
       return session;

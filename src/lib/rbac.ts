@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 
-export const rolePermissions: Record<AppRoleKey, PermissionKey[]> = {
-  ADMIN: Object.values(PermissionKey),
-  TREASURER: [
+const permissionMatrix: Record<AppRoleKey, ReadonlySet<PermissionKey>> = {
+  ADMIN: new Set(Object.values(PermissionKey)),
+  TREASURER: new Set([
     PermissionKey.MANAGE_REGIONS,
     PermissionKey.MANAGE_HOUSEHOLDS,
     PermissionKey.MANAGE_CONTRIBUTIONS,
@@ -13,18 +13,25 @@ export const rolePermissions: Record<AppRoleKey, PermissionKey[]> = {
     PermissionKey.MANAGE_EXPENSES,
     PermissionKey.VERIFY_TRANSACTIONS,
     PermissionKey.VIEW_REPORTS,
-  ],
-  AUDITOR: [PermissionKey.VIEW_REPORTS, PermissionKey.VIEW_AUDIT_LOG],
+  ]),
+  AUDITOR: new Set([PermissionKey.VIEW_REPORTS, PermissionKey.VIEW_AUDIT_LOG]),
+};
+
+export const rolePermissions: Record<AppRoleKey, PermissionKey[]> = {
+  ADMIN: Object.values(PermissionKey),
+  TREASURER: [...permissionMatrix.TREASURER],
+  AUDITOR: [...permissionMatrix.AUDITOR],
 };
 
 export type SessionUser = Pick<User, "id" | "name" | "email"> & {
   role: AppRoleKey;
+  isActive?: boolean;
 };
 
 export async function requireSession() {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user || session.user.isActive === false) {
     redirect("/login");
   }
 
@@ -34,9 +41,16 @@ export async function requireSession() {
 export async function requirePermission(permission: PermissionKey) {
   const user = await requireSession();
 
-  if (!rolePermissions[user.role]?.includes(permission)) {
+  if (!permissionMatrix[user.role]?.has(permission)) {
     redirect("/dashboard?error=unauthorized");
   }
 
   return user;
+}
+
+export function hasPermission(
+  role: AppRoleKey,
+  permission: PermissionKey,
+) {
+  return permissionMatrix[role]?.has(permission) ?? false;
 }
