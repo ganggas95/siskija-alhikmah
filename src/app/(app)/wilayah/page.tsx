@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { PageHeader } from "@/components/app/page-header";
 import { ResponsiveInlineGrid } from "@/components/layout/responsive-inline-grid";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
 import { DeleteRegionForm } from "./_components/delete-region-form";
@@ -155,6 +156,13 @@ export default async function RegionPage({
                 </div>
               </article>
             ))}
+            {regions.length === 0 ? (
+              <TableEmptyState
+                icon={MapPinned}
+                title="Belum ada data wilayah"
+                description="Tambahkan wilayah untuk mulai mengelompokkan jamaah."
+              />
+            ) : null}
           </div>
           {/* Desktop table */}
           <div className="hidden overflow-x-auto md:block">
@@ -193,6 +201,17 @@ export default async function RegionPage({
                 </tr>
               </thead>
               <tbody>
+                {regions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>
+                      <TableEmptyState
+                        icon={MapPinned}
+                        title="Belum ada data wilayah"
+                        description="Coba ubah filter atau tambahkan wilayah baru."
+                      />
+                    </td>
+                  </tr>
+                ) : null}
                 {regions.map((region) => (
                   <tr key={region.id} className="border-b border-slate-100">
                     <td className="px-3 py-3">

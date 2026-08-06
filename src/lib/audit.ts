@@ -9,6 +9,8 @@ type AuditPayload = {
   entityId: string;
   beforeData?: Prisma.InputJsonValue;
   afterData?: Prisma.InputJsonValue;
+  ipAddress?: string | null;
+  userAgent?: string | null;
 };
 
 export async function createAuditLog(
@@ -23,6 +25,8 @@ export async function createAuditLog(
       entityId: payload.entityId,
       beforeData: payload.beforeData,
       afterData: payload.afterData,
+      ipAddress: payload.ipAddress ?? undefined,
+      userAgent: payload.userAgent ?? undefined,
     },
   });
 }

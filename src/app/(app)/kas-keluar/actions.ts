@@ -2,12 +2,27 @@
 
 import { ExpenseStatus, PaymentMethod, PermissionKey } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
+import type { ActionResult } from "@/lib/action-result";
 import { db } from "@/lib/db";
 import { requirePermission, requireSession } from "@/lib/rbac";
 import { verifyExpense } from "@/modules/cash/services/verify-expense";
 import { createTransactionNumber } from "@/modules/shared/numbering";
-import type { ActionResult } from "@/lib/action-result";
+
+const expenseFormSchema = z.object({
+  id: z.string().cuid().optional(),
+  transactionDate: z.coerce.date(),
+  categoryId: z.string().cuid(),
+  payeeName: z.string().trim().min(1, "Penerima pembayaran wajib diisi."),
+  amount: z
+    .string()
+    .trim()
+    .refine((value) => Number(value) > 0, "Nominal harus lebih besar dari nol."),
+  method: z.nativeEnum(PaymentMethod),
+  description: z.string().trim().max(500).optional().or(z.literal("")),
+  status: z.nativeEnum(ExpenseStatus).default(ExpenseStatus.DRAFT),
+});
 
 function getRedirectTo(formData: FormData, fallback: string) {
   const redirectTo = String(formData.get("redirectTo") ?? "").trim();
@@ -20,31 +35,65 @@ function revalidateExpensePaths() {
   revalidatePath("/buku-kas");
 }
 
+async function assertExpenseCategory(categoryId: string) {
+  const category = await db.transactionCategory.findUnique({
+    where: { id: categoryId },
+    select: { id: true, type: true, isActive: true, deletedAt: true },
+  });
+
+  if (!category || category.deletedAt || !category.isActive) {
+    throw new Error("Kategori pengeluaran tidak ditemukan atau tidak aktif.");
+  }
+
+  if (category.type !== "EXPENSE") {
+    throw new Error("Kategori yang dipilih bukan kategori pengeluaran.");
+  }
+}
+
+function getPersistedExpenseStatus(status: ExpenseStatus) {
+  return status === ExpenseStatus.VERIFIED ? ExpenseStatus.DRAFT : status;
+}
+
 export async function createExpenseAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const user = await requirePermission(PermissionKey.MANAGE_EXPENSES);
 
   try {
-    const requestedStatus = String(
-      formData.get("status") ?? ExpenseStatus.DRAFT,
-    ) as ExpenseStatus;
+    const parsed = expenseFormSchema.safeParse({
+      transactionDate: formData.get("transactionDate"),
+      categoryId: formData.get("categoryId"),
+      payeeName: formData.get("payeeName"),
+      amount: formData.get("amount"),
+      method: formData.get("method"),
+      description: formData.get("description"),
+      status: formData.get("status") ?? ExpenseStatus.DRAFT,
+    });
+
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: parsed.error.issues[0]?.message ?? "Input kas keluar tidak valid.",
+      };
+    }
+
+    await assertExpenseCategory(parsed.data.categoryId);
 
     const expense = await db.expenseTransaction.create({
       data: {
-        transactionNumber: createTransactionNumber("EXP"),
-        transactionDate: new Date(String(formData.get("transactionDate"))),
-        categoryId: String(formData.get("categoryId")),
-        payeeName: String(formData.get("payeeName")),
-        amount: String(formData.get("amount")),
-        method: String(formData.get("method")) as PaymentMethod,
-        description: String(formData.get("description") ?? ""),
-        status: requestedStatus,
+        transactionNumber: createTransactionNumber("EXP", parsed.data.transactionDate),
+        transactionDate: parsed.data.transactionDate,
+        categoryId: parsed.data.categoryId,
+        payeeName: parsed.data.payeeName,
+        amount: parsed.data.amount,
+        method: parsed.data.method,
+        description: parsed.data.description || "",
+        status: getPersistedExpenseStatus(parsed.data.status),
         createdById: user.id,
       },
     });
 
-    if (requestedStatus === ExpenseStatus.VERIFIED) {
+    if (parsed.data.status === ExpenseStatus.VERIFIED) {
       await verifyExpense({
         expenseId: expense.id,
         actorId: user.id,
@@ -72,20 +121,31 @@ export async function updateExpenseAction(
   const user = await requirePermission(PermissionKey.MANAGE_EXPENSES);
 
   try {
-    const id = String(formData.get("id") ?? "");
-    const requestedStatus = String(
-      formData.get("status") ?? ExpenseStatus.DRAFT,
-    ) as ExpenseStatus;
+    const parsed = expenseFormSchema.safeParse({
+      id: formData.get("id"),
+      transactionDate: formData.get("transactionDate"),
+      categoryId: formData.get("categoryId"),
+      payeeName: formData.get("payeeName"),
+      amount: formData.get("amount"),
+      method: formData.get("method"),
+      description: formData.get("description"),
+      status: formData.get("status") ?? ExpenseStatus.DRAFT,
+    });
 
-    if (!id) {
+    if (!parsed.success || !parsed.data.id) {
       return {
         success: false,
-        message: "ID transaksi kas keluar tidak ditemukan.",
+        message:
+          parsed.success
+            ? "ID transaksi kas keluar tidak ditemukan."
+            : parsed.error.issues[0]?.message ?? "Input kas keluar tidak valid.",
       };
     }
 
+    await assertExpenseCategory(parsed.data.categoryId);
+
     const existing = await db.expenseTransaction.findUnique({
-      where: { id },
+      where: { id: parsed.data.id },
       select: { id: true, status: true },
     });
 
@@ -104,19 +164,19 @@ export async function updateExpenseAction(
     }
 
     const updated = await db.expenseTransaction.update({
-      where: { id },
+      where: { id: parsed.data.id },
       data: {
-        transactionDate: new Date(String(formData.get("transactionDate"))),
-        categoryId: String(formData.get("categoryId")),
-        payeeName: String(formData.get("payeeName")),
-        amount: String(formData.get("amount")),
-        method: String(formData.get("method")) as PaymentMethod,
-        description: String(formData.get("description") ?? ""),
-        status: requestedStatus,
+        transactionDate: parsed.data.transactionDate,
+        categoryId: parsed.data.categoryId,
+        payeeName: parsed.data.payeeName,
+        amount: parsed.data.amount,
+        method: parsed.data.method,
+        description: parsed.data.description || "",
+        status: getPersistedExpenseStatus(parsed.data.status),
       },
     });
 
-    if (requestedStatus === ExpenseStatus.VERIFIED) {
+    if (parsed.data.status === ExpenseStatus.VERIFIED) {
       await verifyExpense({
         expenseId: updated.id,
         actorId: user.id,
@@ -162,7 +222,6 @@ export async function deleteExpenseAction(
       };
     }
 
-    // Only DRAFT transactions can be deleted
     if (transaction.status !== ExpenseStatus.DRAFT) {
       return {
         success: false,
@@ -170,7 +229,6 @@ export async function deleteExpenseAction(
       };
     }
 
-    // Only the creator can delete, unless Admin
     if (user.role !== "ADMIN" && transaction.createdById !== user.id) {
       return {
         success: false,

@@ -1,19 +1,33 @@
 "use server";
 
 import {
-  BillStatus,
-  ContributionPaymentStatus,
-  IncomeStatus,
   PaymentMethod,
   PermissionKey,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import Decimal from "decimal.js";
+import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { requirePermission, requireSession } from "@/lib/rbac";
 import { recordContributionPayment } from "@/modules/contributions/services/record-payment";
+import {
+  approveContributionPayment,
+  approveContributionPayments,
+  cancelContributionPayment,
+  cancelContributionPayments,
+} from "@/modules/contributions/services/approve-payment";
 import type { ActionResult } from "@/lib/action-result";
+
+const paymentFormSchema = z.object({
+  billId: z.string().cuid(),
+  amountPaid: z
+    .string()
+    .trim()
+    .refine((value) => Number(value) > 0, "Nominal pembayaran harus lebih besar dari nol."),
+  paymentDate: z.coerce.date(),
+  method: z.nativeEnum(PaymentMethod),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
+});
 
 function getRedirectTo(formData: FormData, fallback: string) {
   const redirectTo = String(formData.get("redirectTo") ?? "").trim();
@@ -26,13 +40,28 @@ export async function recordPaymentAction(
   const user = await requirePermission(PermissionKey.MANAGE_CONTRIBUTIONS);
 
   try {
+    const parsed = paymentFormSchema.safeParse({
+      billId: formData.get("billId"),
+      amountPaid: formData.get("amountPaid"),
+      paymentDate: formData.get("paymentDate"),
+      method: formData.get("method"),
+      notes: formData.get("notes"),
+    });
+
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: parsed.error.issues[0]?.message ?? "Input pembayaran tidak valid.",
+      };
+    }
+
     await recordContributionPayment({
       actorId: user.id,
-      billId: String(formData.get("billId")),
-      amountPaid: String(formData.get("amountPaid")),
-      paymentDate: new Date(String(formData.get("paymentDate"))),
-      method: String(formData.get("method")) as PaymentMethod,
-      notes: String(formData.get("notes") ?? ""),
+      billId: parsed.data.billId,
+      amountPaid: parsed.data.amountPaid,
+      paymentDate: parsed.data.paymentDate,
+      method: parsed.data.method,
+      notes: parsed.data.notes || "",
     });
 
     revalidatePath("/iuran/pembayaran");
@@ -50,12 +79,6 @@ export async function recordPaymentAction(
         error instanceof Error ? error.message : "Terjadi kesalahan server.",
     };
   }
-}
-
-function deriveBillStatusFromPayments(amountDue: Decimal, totalPaid: Decimal): BillStatus {
-  if (totalPaid.lte(0)) return BillStatus.BELUM_BAYAR;
-  if (totalPaid.greaterThanOrEqualTo(amountDue)) return BillStatus.LUNAS;
-  return BillStatus.SEBAGIAN;
 }
 
 export async function deletePaymentAction(
@@ -95,80 +118,10 @@ export async function deletePaymentAction(
       };
     }
 
-    await db.$transaction(async (tx) => {
-      // 1. Cancel the payment
-        await tx.contributionPayment.update({
-          where: { id },
-          data: {
-            canceledAt: new Date(),
-            status: ContributionPaymentStatus.CANCELED,
-          },
-        });
-
-      // 2. Cancel the associated income transaction
-      if (payment.incomeTransactionId) {
-        await tx.incomeTransaction.update({
-          where: { id: payment.incomeTransactionId },
-          data: {
-            status: IncomeStatus.CANCELED,
-            canceledAt: new Date(),
-          },
-        });
-
-        // 3. Deactivate ledger entries
-        await tx.cashLedger.updateMany({
-          where: {
-            sourceId: payment.incomeTransactionId,
-            isActive: true,
-          },
-          data: { isActive: false },
-        });
-      }
-
-      // 4. Recalculate bill status
-      const validPayments = await tx.contributionPayment.findMany({
-        where: {
-          billId: payment.billId,
-          canceledAt: null,
-          status: ContributionPaymentStatus.VERIFIED,
-        },
-        select: { amountPaid: true },
-      });
-
-      const bill = await tx.contributionBill.findUnique({
-        where: { id: payment.billId },
-        select: { amountDue: true },
-      });
-
-      if (bill) {
-        const totalPaid = validPayments.reduce(
-          (total, p) => total.plus(p.amountPaid.toString()),
-          new Decimal(0),
-        );
-        const nextStatus = deriveBillStatusFromPayments(
-          new Decimal(bill.amountDue.toString()),
-          totalPaid,
-        );
-
-        await tx.contributionBill.update({
-          where: { id: payment.billId },
-          data: { status: nextStatus },
-        });
-      }
-
-      // 5. Audit log
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: "DELETE_CONTRIBUTION_PAYMENT",
-          entity: "ContributionPayment",
-          entityId: id,
-          afterData: {
-            billId: payment.billId,
-            reason: "Dihapus oleh user",
-          },
-        },
-      });
+    await cancelContributionPayment({
+      paymentId: id,
+      actorId: user.id,
+      reason: "Dibatalkan dari aksi hapus pembayaran",
     });
 
     revalidatePath("/iuran/pembayaran");
@@ -186,4 +139,72 @@ export async function deletePaymentAction(
         error instanceof Error ? error.message : "Terjadi kesalahan server.",
     };
   }
+}
+
+function getPaymentIds(formData: FormData) {
+  return [...new Set(formData.getAll("paymentId").map(String).filter(Boolean))];
+}
+
+export async function approvePaymentAction(formData: FormData): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.VERIFY_TRANSACTIONS);
+
+  try {
+    const paymentId = String(formData.get("paymentId") ?? "");
+    if (!paymentId) return { success: false, message: "ID pembayaran tidak ditemukan." };
+    await approveContributionPayment({ paymentId, actorId: user.id });
+    revalidateContributionPaymentPaths();
+    return { success: true, message: "Pembayaran berhasil di-Approve." };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Terjadi kesalahan server." };
+  }
+}
+
+export async function cancelPaymentAction(formData: FormData): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.VERIFY_TRANSACTIONS);
+
+  try {
+    const paymentId = String(formData.get("paymentId") ?? "");
+    if (!paymentId) return { success: false, message: "ID pembayaran tidak ditemukan." };
+    await cancelContributionPayment({ paymentId, actorId: user.id });
+    revalidateContributionPaymentPaths();
+    return { success: true, message: "Pembayaran berhasil dibatalkan." };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Terjadi kesalahan server." };
+  }
+}
+
+export async function approveSelectedPaymentsAction(formData: FormData): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.VERIFY_TRANSACTIONS);
+  const paymentIds = getPaymentIds(formData);
+  if (!paymentIds.length) return { success: false, message: "Pilih minimal satu pembayaran." };
+
+  try {
+    await approveContributionPayments(paymentIds, user.id);
+    revalidateContributionPaymentPaths();
+    return { success: true, message: `${paymentIds.length} pembayaran berhasil di-Approve.` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Bulk Approve gagal." };
+  }
+}
+
+export async function cancelSelectedPaymentsAction(formData: FormData): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.VERIFY_TRANSACTIONS);
+  const paymentIds = getPaymentIds(formData);
+  if (!paymentIds.length) return { success: false, message: "Pilih minimal satu pembayaran." };
+
+  try {
+    await cancelContributionPayments(paymentIds, user.id);
+    revalidateContributionPaymentPaths();
+    return { success: true, message: `${paymentIds.length} pembayaran berhasil dibatalkan.` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Bulk Cancel gagal." };
+  }
+}
+
+function revalidateContributionPaymentPaths() {
+  revalidatePath("/iuran/pembayaran");
+  revalidatePath("/dashboard");
+  revalidatePath("/buku-kas");
+  revalidatePath("/laporan/iuran");
+  revalidatePath("/laporan/kas-masuk");
 }
