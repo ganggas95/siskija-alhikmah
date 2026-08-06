@@ -4,11 +4,11 @@ import { ExpenseStatus, PaymentMethod, PermissionKey } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import type { ActionResult } from "@/lib/action-result";
 import { db } from "@/lib/db";
 import { requirePermission, requireSession } from "@/lib/rbac";
 import { verifyExpense } from "@/modules/cash/services/verify-expense";
 import { createTransactionNumber } from "@/modules/shared/numbering";
-import type { ActionResult } from "@/lib/action-result";
 
 const expenseFormSchema = z.object({
   id: z.string().cuid().optional(),
@@ -50,6 +50,10 @@ async function assertExpenseCategory(categoryId: string) {
   }
 }
 
+function getPersistedExpenseStatus(status: ExpenseStatus) {
+  return status === ExpenseStatus.VERIFIED ? ExpenseStatus.DRAFT : status;
+}
+
 export async function createExpenseAction(
   formData: FormData,
 ): Promise<ActionResult> {
@@ -84,7 +88,7 @@ export async function createExpenseAction(
         amount: parsed.data.amount,
         method: parsed.data.method,
         description: parsed.data.description || "",
-        status: parsed.data.status,
+        status: getPersistedExpenseStatus(parsed.data.status),
         createdById: user.id,
       },
     });
@@ -168,7 +172,7 @@ export async function updateExpenseAction(
         amount: parsed.data.amount,
         method: parsed.data.method,
         description: parsed.data.description || "",
-        status: parsed.data.status,
+        status: getPersistedExpenseStatus(parsed.data.status),
       },
     });
 
@@ -218,7 +222,6 @@ export async function deleteExpenseAction(
       };
     }
 
-    // Only DRAFT transactions can be deleted
     if (transaction.status !== ExpenseStatus.DRAFT) {
       return {
         success: false,
@@ -226,7 +229,6 @@ export async function deleteExpenseAction(
       };
     }
 
-    // Only the creator can delete, unless Admin
     if (user.role !== "ADMIN" && transaction.createdById !== user.id) {
       return {
         success: false,

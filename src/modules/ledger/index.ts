@@ -89,11 +89,6 @@ export async function reverseLedgerEntries(
   const reversals = [];
 
   for (const entry of activeEntries) {
-    await tx.cashLedger.update({
-      where: { id: entry.id },
-      data: { isActive: false },
-    });
-
     reversals.push(
       await tx.cashLedger.upsert({
         where: {

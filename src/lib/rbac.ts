@@ -2,6 +2,7 @@ import { AppRoleKey, PermissionKey, type User } from "@prisma/client";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { db } from "@/lib/db";
 
 const permissionMatrix: Record<AppRoleKey, ReadonlySet<PermissionKey>> = {
   ADMIN: new Set(Object.values(PermissionKey)),
@@ -32,6 +33,15 @@ export async function requireSession() {
   const session = await auth();
 
   if (!session?.user || session.user.isActive === false) {
+    redirect("/login");
+  }
+
+  const currentUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, isActive: true },
+  });
+
+  if (!currentUser?.isActive) {
     redirect("/login");
   }
 

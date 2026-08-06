@@ -50,6 +50,10 @@ async function assertIncomeCategory(categoryId: string) {
   }
 }
 
+function getPersistedIncomeStatus(status: IncomeStatus) {
+  return status === IncomeStatus.VERIFIED ? IncomeStatus.DRAFT : status;
+}
+
 export async function createIncomeAction(
   formData: FormData,
 ): Promise<ActionResult> {
@@ -84,7 +88,7 @@ export async function createIncomeAction(
         amount: parsed.data.amount,
         method: parsed.data.method,
         description: parsed.data.description || "",
-        status: parsed.data.status,
+        status: getPersistedIncomeStatus(parsed.data.status),
         createdById: user.id,
       },
     });
@@ -165,7 +169,7 @@ export async function updateIncomeAction(
         amount: parsed.data.amount,
         method: parsed.data.method,
         description: parsed.data.description || "",
-        status: parsed.data.status,
+        status: getPersistedIncomeStatus(parsed.data.status),
       },
     });
 
