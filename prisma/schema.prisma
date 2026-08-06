@@ -149,6 +149,7 @@ model UserRole {
 model MosqueProfile {
   id                     String   @id @default(cuid())
   name                   String
+  organizationName       String?
   address                String?
   rt                     String?
   rw                     String?
@@ -158,6 +159,7 @@ model MosqueProfile {
   treasurerName          String?
   logoUrl                String?
   defaultContributionFee Decimal  @db.Decimal(18, 2)
+  specialContributionFee Decimal  @db.Decimal(18, 2) @default(0)
   currencyCode           String   @default("IDR")
   fiscalYear             Int      @default(2026)
   receiptText            String?

@@ -8,7 +8,9 @@ import {
 import Decimal from "decimal.js";
 
 import { db } from "@/lib/db";
+import { createAuditLog } from "@/lib/audit";
 import { createReceiptNumber } from "@/modules/shared/numbering";
+import { getContributionFeeConfig, type ContributionFeeConfig } from "@/modules/contributions/services/contribution-settings";
 import { detectContributionImportHeader, readContributionImportWorkbook } from "./xlsx";
 
 type ImportCell = {
@@ -79,6 +81,7 @@ type ImportContext = {
   importedById: string;
   paymentDate: Date;
   defaultContributionAmount: Decimal;
+  contributionFeeConfig?: ContributionFeeConfig;
 };
 
 function normalizeAmount(value: string) {
@@ -117,25 +120,6 @@ function nextMonth(year: number, month: number) {
   }
 
   return { year, month: month + 1 };
-}
-
-async function getDefaultContributionAmount() {
-  const setting = await db.contributionSetting.findFirst({
-    where: { isActive: true },
-    orderBy: { effectiveFrom: "desc" },
-    select: { defaultAmount: true },
-  });
-
-  if (setting) {
-    return setting.defaultAmount;
-  }
-
-  const profile = await db.mosqueProfile.findFirst({
-    orderBy: { createdAt: "asc" },
-    select: { defaultContributionFee: true },
-  });
-
-  return profile?.defaultContributionFee ?? new Decimal(0);
 }
 
 function toJsonValue(value: unknown): Prisma.InputJsonValue {
@@ -247,6 +231,9 @@ async function ensureContributionBill(
   year: number,
   month: number,
   defaultAmount: Decimal,
+  specialAmount: Decimal | undefined,
+  isSpecial: boolean,
+  actorId: string,
 ) {
   const existing = await tx.contributionBill.findUnique({
     where: {
@@ -260,14 +247,22 @@ async function ensureContributionBill(
 
   if (existing) return existing;
 
-  return tx.contributionBill.create({
+  const bill = await tx.contributionBill.create({
     data: {
       householdId,
       year,
       month,
-      amountDue: defaultAmount,
+      amountDue: isSpecial && specialAmount ? specialAmount : defaultAmount,
     },
   });
+  await createAuditLog({
+    userId: actorId,
+    action: "AUTO_CREATE_CONTRIBUTION_BILL",
+    entity: "ContributionBill",
+    entityId: bill.id,
+    afterData: { householdId, year, month, amountDue: bill.amountDue.toString(), source: "IMPORT_CONTRIBUTION_EXCEL" },
+  }, tx);
+  return bill;
 }
 
 async function getActivePaymentExists(
@@ -292,6 +287,7 @@ export async function allocateCell(
   row: ImportRow,
   cell: ImportCell,
   householdId: string,
+  householdFlags: { isElderly: boolean; isDisabled: boolean } = { isElderly: false, isDisabled: false },
 ) {
   let cursorYear = context.targetYear;
   let cursorMonth = cell.month;
@@ -301,12 +297,16 @@ export async function allocateCell(
   let spilledPayments = 0;
 
   while (remaining.gt(0)) {
+    const feeConfig = context.contributionFeeConfig ?? { normal: context.defaultContributionAmount, special: context.defaultContributionAmount };
     const bill = await ensureContributionBill(
       tx,
       householdId,
       cursorYear,
       cursorMonth,
       context.defaultContributionAmount,
+      feeConfig.special,
+      householdFlags.isElderly || householdFlags.isDisabled,
+      context.importedById,
     );
     const activePayment = await getActivePaymentExists(tx, bill.id);
 
@@ -406,13 +406,15 @@ type PreparedImport = {
   rows: ImportRow[];
   batchId: string;
   defaultContributionAmount: Decimal;
+  contributionFeeConfig: ContributionFeeConfig;
   existingBatchStatus: ImportBatchStatus | null;
 };
 
 async function prepareContributionImport(input: ImportContributionPaymentsInput): Promise<PreparedImport> {
   const parsed = readContributionImportWorkbook(input.buffer);
   const rows = buildImportRows(parsed.rows);
-  const defaultContributionAmount = await getDefaultContributionAmount();
+  const contributionFeeConfig = await getContributionFeeConfig();
+  const defaultContributionAmount = contributionFeeConfig.normal;
   const existingBatch = await db.importBatch.findUnique({
     where: {
       sourceFileHash_targetYear: {
@@ -432,6 +434,7 @@ async function prepareContributionImport(input: ImportContributionPaymentsInput)
       rows,
       batchId: existingBatch.id,
       defaultContributionAmount,
+      contributionFeeConfig,
       existingBatchStatus: existingBatch.status,
     };
   }
@@ -441,6 +444,7 @@ async function prepareContributionImport(input: ImportContributionPaymentsInput)
     rows,
     batchId: existingBatch?.id ?? "",
     defaultContributionAmount,
+    contributionFeeConfig,
     existingBatchStatus: existingBatch?.status ?? null,
   };
 }
@@ -562,6 +566,7 @@ async function runContributionImport(
     importedById: input.importedById,
     paymentDate: input.paymentDate,
     defaultContributionAmount: prepared.defaultContributionAmount,
+    contributionFeeConfig: prepared.contributionFeeConfig,
   };
 
   emit?.({
@@ -600,6 +605,8 @@ async function runContributionImport(
             code: true,
             headName: true,
             status: true,
+            isElderly: true,
+            isDisabled: true,
             deletedAt: true,
           },
         });
@@ -655,7 +662,7 @@ async function runContributionImport(
           }
 
           const result = await db.$transaction(async (tx) => {
-            return allocateCell(tx, context, row, cell, household.id);
+            return allocateCell(tx, context, row, cell, household.id, { isElderly: household.isElderly, isDisabled: household.isDisabled });
           });
 
           rowCreated += result.createdPayments.length;

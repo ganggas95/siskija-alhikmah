@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
 import {
@@ -224,7 +225,11 @@ export default async function HouseholdPage({
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                Tidak ada data jamaah.
+                <TableEmptyState
+                  icon={Users}
+                  title="Belum ada data jamaah"
+                  description="Data jamaah yang sesuai dengan filter akan tampil di sini."
+                />
               </div>
             )}
           </div>
@@ -273,6 +278,17 @@ export default async function HouseholdPage({
                 </tr>
               </thead>
               <tbody>
+                {households.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <TableEmptyState
+                        icon={Users}
+                        title="Belum ada data jamaah"
+                        description="Coba ubah filter atau tambahkan data jamaah baru."
+                      />
+                    </td>
+                  </tr>
+                ) : null}
                 {households.map((household) => (
                   <tr key={household.id} className="border-b border-slate-100">
                     <td className="px-3 py-3 font-medium text-slate-900">{household.code}</td>

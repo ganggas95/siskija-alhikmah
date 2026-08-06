@@ -20,15 +20,10 @@ export async function generateBillsAction(
   try {
     const year = Number(formData.get("year"));
     const month = Number(formData.get("month"));
-    const amountNormal = String(formData.get("amountNormal") ?? "7000");
-    const amountDiscounted = String(formData.get("amountDiscounted") ?? "5000");
-
     await generateMonthlyBills({
       year,
       month,
       actorId: user.id,
-      amountNormal,
-      amountDiscounted,
     });
 
     revalidatePath("/iuran/tagihan");
