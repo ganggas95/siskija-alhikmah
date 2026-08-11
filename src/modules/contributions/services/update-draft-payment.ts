@@ -62,7 +62,7 @@ export async function updateDraftContributionPayment(
           amount: input.amountPaid,
           transactionDate: input.paymentDate,
           method: input.method,
-          description: input.notes || undefined,
+          description: input.notes ?? "",
           status: IncomeStatus.DRAFT,
         },
       });

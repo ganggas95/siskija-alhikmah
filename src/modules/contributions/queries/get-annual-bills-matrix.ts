@@ -3,12 +3,14 @@ import {
   ContributionPaymentStatus,
   Prisma,
 } from "@prisma/client";
+import Decimal from "decimal.js";
 
 import { db } from "@/lib/db";
 import {
-  buildAnnualBillsMatrixRows,
   buildAnnualBillsSummary,
+  buildAnnualBillsMatrixRows,
   type AnnualBillDraftPaymentRecord,
+  type AnnualBillsSummary,
   type AnnualBillPaymentTotalRecord,
 } from "@/modules/contributions/annual-bills";
 
@@ -74,6 +76,7 @@ export function buildAnnualBillsMatrixResult(input: {
   }>;
   paymentTotals: AnnualBillPaymentTotalRecord[];
   draftPayments?: AnnualBillDraftPaymentRecord[];
+  summary?: AnnualBillsSummary;
 }) {
   const rows = buildAnnualBillsMatrixRows({
     households: input.households,
@@ -81,16 +84,17 @@ export function buildAnnualBillsMatrixResult(input: {
     paymentTotals: input.paymentTotals,
     draftPayments: input.draftPayments,
   });
-  const summary = buildAnnualBillsSummary({
-    householdCount: input.totalHouseholds,
-    bills: input.bills,
-    paymentTotals: input.paymentTotals,
-  });
 
   return {
     rows,
     totalHouseholds: input.totalHouseholds,
-    summary,
+    summary:
+      input.summary ??
+      buildAnnualBillsSummary({
+        householdCount: input.totalHouseholds,
+        bills: input.bills,
+        paymentTotals: input.paymentTotals,
+      }),
   };
 }
 
@@ -99,7 +103,7 @@ export async function getAnnualBillsMatrix(input: AnnualBillsMatrixInput) {
   const skip = Math.max((input.page ?? 1) - 1, 0) * (input.take ?? 25);
   const take = input.take ?? 25;
 
-  const [households, totalHouseholds, filteredBills] = await Promise.all([
+  const [households, totalHouseholds] = await Promise.all([
     db.household.findMany({
       where: householdWhere,
       select: {
@@ -113,41 +117,65 @@ export async function getAnnualBillsMatrix(input: AnnualBillsMatrixInput) {
       take,
     }),
     db.household.count({ where: householdWhere }),
-    db.contributionBill.findMany({
-      where: {
-        canceledAt: null,
-        year: input.year,
-        household: householdWhere,
-      },
-      select: {
-        id: true,
-        householdId: true,
-        month: true,
-        year: true,
-        status: true,
-        amountDue: true,
-      },
-      orderBy: [{ household: { code: "asc" } }, { month: "asc" }],
-    }),
   ]);
+  const householdIds = households.map((household) => household.id);
 
-  const paymentTotals =
-    filteredBills.length > 0
-      ? await db.contributionPayment.groupBy({
+  const [
+    filteredBills,
+    paymentTotals,
+    draftPayments,
+    summaryByStatus,
+    totalPaidAggregate,
+    partialPaidAggregate,
+  ] = await Promise.all([
+    householdIds.length > 0
+      ? db.contributionBill.findMany({
+          where: {
+            canceledAt: null,
+            year: input.year,
+            householdId: { in: householdIds },
+          },
+          select: {
+            id: true,
+            householdId: true,
+            month: true,
+            year: true,
+            status: true,
+            amountDue: true,
+          },
+          orderBy: [{ household: { code: "asc" } }, { month: "asc" }],
+        })
+      : [],
+    householdIds.length > 0
+      ? db.contributionPayment.groupBy({
           by: ["billId"],
           where: {
-            billId: { in: filteredBills.map((bill) => bill.id) },
+            billId: {
+              in: (
+                await db.contributionBill.findMany({
+                  where: {
+                    canceledAt: null,
+                    year: input.year,
+                    householdId: { in: householdIds },
+                  },
+                  select: { id: true },
+                })
+              ).map((bill) => bill.id),
+            },
             canceledAt: null,
             status: ContributionPaymentStatus.VERIFIED,
           },
           _sum: { amountPaid: true },
         })
-      : [];
-  const draftPayments =
-    filteredBills.length > 0
-      ? await db.contributionPayment.findMany({
+      : [],
+    householdIds.length > 0
+      ? db.contributionPayment.findMany({
           where: {
-            billId: { in: filteredBills.map((bill) => bill.id) },
+            bill: {
+              canceledAt: null,
+              year: input.year,
+              householdId: { in: householdIds },
+            },
             canceledAt: null,
             status: ContributionPaymentStatus.DRAFT,
           },
@@ -158,7 +186,79 @@ export async function getAnnualBillsMatrix(input: AnnualBillsMatrixInput) {
           },
           orderBy: [{ billId: "asc" }, { createdAt: "desc" }],
         })
-      : [];
+      : [],
+    db.contributionBill.groupBy({
+      by: ["status"],
+      where: {
+        canceledAt: null,
+        year: input.year,
+        household: householdWhere,
+      },
+      _count: { _all: true },
+      _sum: { amountDue: true },
+    }),
+    db.contributionPayment.aggregate({
+      where: {
+        canceledAt: null,
+        status: ContributionPaymentStatus.VERIFIED,
+        bill: {
+          canceledAt: null,
+          year: input.year,
+          household: householdWhere,
+        },
+      },
+      _sum: { amountPaid: true },
+    }),
+    db.contributionPayment.aggregate({
+      where: {
+        canceledAt: null,
+        status: ContributionPaymentStatus.VERIFIED,
+        bill: {
+          canceledAt: null,
+          year: input.year,
+          status: BillStatus.SEBAGIAN,
+          household: householdWhere,
+        },
+      },
+      _sum: { amountPaid: true },
+    }),
+  ]);
+  const statusMap = new Map(summaryByStatus.map((item) => [item.status, item]));
+  const totalAmountDue = summaryByStatus.reduce(
+    (total, item) => total.plus(item._sum.amountDue?.toString() ?? "0"),
+    new Decimal(0),
+  );
+  const unpaidAmountDue = new Decimal(
+    statusMap.get(BillStatus.BELUM_BAYAR)?._sum.amountDue?.toString() ?? "0",
+  );
+  const partialAmountDue = new Decimal(
+    statusMap.get(BillStatus.SEBAGIAN)?._sum.amountDue?.toString() ?? "0",
+  );
+  const partialPaid = new Decimal(partialPaidAggregate._sum.amountPaid?.toString() ?? "0");
+  const totalPaid = new Decimal(totalPaidAggregate._sum.amountPaid?.toString() ?? "0");
+  const totalOutstanding = unpaidAmountDue.plus(Decimal.max(partialAmountDue.minus(partialPaid), 0));
+  const generatedBillCount = summaryByStatus.reduce(
+    (total, item) => total + item._count._all,
+    0,
+  );
+  const paidBillCount = statusMap.get(BillStatus.LUNAS)?._count._all ?? 0;
+  const partialBillCount = statusMap.get(BillStatus.SEBAGIAN)?._count._all ?? 0;
+  const unpaidBillCount = statusMap.get(BillStatus.BELUM_BAYAR)?._count._all ?? 0;
+  const exemptedBillCount = statusMap.get(BillStatus.DIBEBASKAN)?._count._all ?? 0;
+  const canceledBillCount = statusMap.get(BillStatus.DIBATALKAN)?._count._all ?? 0;
+  const summary: AnnualBillsSummary = {
+    householdCount: totalHouseholds,
+    generatedBillCount,
+    paidBillCount,
+    partialBillCount,
+    unpaidBillCount,
+    exemptedBillCount,
+    canceledBillCount,
+    totalAmountDue: totalAmountDue.toString(),
+    totalPaid: totalPaid.toString(),
+    totalOutstanding: totalOutstanding.toString(),
+    coverageRate: generatedBillCount ? Math.round((paidBillCount / generatedBillCount) * 100) : 0,
+  };
 
   return buildAnnualBillsMatrixResult({
     households,
@@ -169,5 +269,6 @@ export async function getAnnualBillsMatrix(input: AnnualBillsMatrixInput) {
       totalPaid: item._sum.amountPaid ?? new Prisma.Decimal(0),
     })),
     draftPayments,
+    summary,
   });
 }

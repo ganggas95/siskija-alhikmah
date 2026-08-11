@@ -96,28 +96,6 @@ export function PaymentForm({
           ? "rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5"
           : "grid gap-4"
       }
-      onSubmit={(e) => {
-        const form = e.currentTarget;
-        const billSelect = form.elements.namedItem(
-          "billId",
-        ) as HTMLSelectElement;
-        const amountInput = form.elements.namedItem(
-          "amountPaid",
-        ) as HTMLInputElement;
-        const selected = bills.find(
-          (b: BillOption) => b.id === billSelect.value,
-        );
-        if (
-          selected &&
-          Number(amountInput.value) < Number(selected.amountDue)
-        ) {
-          e.preventDefault();
-          amountInput.setCustomValidity(
-            `Nominal dibayar minimal Rp${Number(selected.amountDue).toLocaleString("id-ID")}`,
-          );
-          amountInput.reportValidity();
-        }
-      }}
     >
       <input type="hidden" name="redirectTo" value={redirectTo} />
       {paymentId ? <input type="hidden" name="paymentId" value={paymentId} /> : null}

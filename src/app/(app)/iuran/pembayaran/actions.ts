@@ -66,6 +66,7 @@ export async function recordPaymentAction(
     });
 
     revalidatePath("/iuran/pembayaran");
+    revalidatePath("/iuran/tagihan");
     revalidatePath("/dashboard");
     revalidatePath("/buku-kas");
     return {
@@ -106,6 +107,27 @@ export async function updateDraftPaymentAction(
       return {
         success: false,
         message: parsed.error.issues[0]?.message ?? "Input pembayaran tidak valid.",
+      };
+    }
+
+    const payment = await db.contributionPayment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        recordedById: true,
+        canceledAt: true,
+        status: true,
+      },
+    });
+
+    if (!payment || payment.canceledAt) {
+      return { success: false, message: "Data pembayaran tidak ditemukan." };
+    }
+
+    if (user.role !== "ADMIN" && payment.recordedById !== user.id) {
+      return {
+        success: false,
+        message: "Anda tidak memiliki izin untuk mengubah pembayaran draft ini.",
       };
     }
 
