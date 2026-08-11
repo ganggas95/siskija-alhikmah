@@ -24,6 +24,11 @@ export default async function AddContributionPaymentPage({
   await requirePermission(PermissionKey.MANAGE_CONTRIBUTIONS);
   const resolvedSearchParams = await resolveSearchParams(searchParams);
   const selectedBillId = getQueryParam(resolvedSearchParams, "billId");
+  const householdId = getQueryParam(resolvedSearchParams, "householdId");
+  const redirectTo = getQueryParam(resolvedSearchParams, "redirectTo");
+  const yearParam = getQueryParam(resolvedSearchParams, "year");
+  const year = yearParam ? Number(yearParam) : Number.NaN;
+  const yearFilter = Number.isInteger(year) && year >= 2000 ? year : undefined;
 
   const [bills, selectedBill] = await Promise.all([
     db.contributionBill.findMany({
@@ -35,9 +40,13 @@ export default async function AddContributionPaymentPage({
           },
         },
       },
-      where: payableBillWhere,
+      where: {
+        ...payableBillWhere,
+        ...(householdId ? { householdId } : {}),
+        ...(yearFilter ? { year: yearFilter } : {}),
+      },
       orderBy: [{ year: "desc" }, { month: "desc" }, { household: { code: "asc" } }],
-      take: 50,
+      take: householdId ? 200 : 50,
     }),
     selectedBillId
       ? db.contributionBill.findFirst({
@@ -57,8 +66,8 @@ export default async function AddContributionPaymentPage({
       : Promise.resolve(null),
   ]);
 
-  const allBills = selectedBill
-    ? [selectedBill, ...bills.filter((bill) => bill.id !== selectedBill.id)]
+  const allBills = selectedBill && !bills.some((bill) => bill.id === selectedBill.id)
+    ? [selectedBill, ...bills]
     : bills;
 
   const billsFormatted = allBills.map((b) => ({
@@ -70,11 +79,15 @@ export default async function AddContributionPaymentPage({
     <section className="space-y-6">
       <PageHeader
         title="Input Pembayaran Iuran"
-        description="Catat pembayaran iuran dari halaman form terpisah."
+        description="Catat pembayaran iuran. Anda bisa langsung masuk dari matriks tagihan tahunan dengan tagihan yang sudah terpilih."
         icon={CreditCard}
       />
       <div className="max-w-3xl">
-        <PaymentForm bills={billsFormatted} initialBillId={selectedBill?.id} />
+        <PaymentForm
+          bills={billsFormatted}
+          initialBillId={selectedBill?.id}
+          redirectTo={redirectTo || "/iuran/pembayaran/tambah"}
+        />
       </div>
     </section>
   );
