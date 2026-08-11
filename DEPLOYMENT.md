@@ -4,6 +4,33 @@
 
 Repository ini sudah bisa dijalankan sebagai aplikasi Next.js production standar dengan PostgreSQL dan Prisma. Deployment saat ini masih manual. Docker, Docker Compose, dan health check endpoint khusus belum tersedia di repo.
 
+## CI/CD GitHub Actions + Vercel
+
+Repository ini memakai pemisahan workflow berikut:
+
+- `CI`
+  - quality gate untuk lint, type-check, unit/integration test, dan e2e dengan PostgreSQL sementara
+- `Vercel Deploy`
+  - preview deploy untuk PR atau branch non-`main`
+  - production deploy untuk `push` ke `main`
+  - tidak menjalankan migration database
+- `Migrate Production`
+  - workflow manual `workflow_dispatch`
+  - preflight `pnpm exec prisma migrate status`
+  - apply `pnpm db:migrate:deploy`
+
+Secrets yang harus tersedia:
+
+- repository secrets:
+  - `VERCEL_TOKEN`
+  - `VERCEL_ORG_ID`
+  - `VERCEL_PROJECT_ID`
+- GitHub Environment `production` secrets:
+  - `POSTGRES_PRISMA_URL`
+  - `POSTGRES_URL_NON_POOLING`
+
+GitHub Environment `production` sebaiknya memakai required reviewers agar deploy production dan migration manual tidak berjalan tanpa approval operator yang tepat.
+
 ## Komponen yang dibutuhkan
 
 - Node.js 22+
@@ -95,6 +122,37 @@ Script build saat ini menjalankan:
 pnpm start
 ```
 
+## Alur operasional Vercel yang disarankan
+
+### Release tanpa perubahan schema
+
+1. merge perubahan ke `main`
+2. tunggu workflow `CI` sukses
+3. workflow `Vercel Deploy` production akan berjalan otomatis
+4. verifikasi `/login`, `/dashboard`, dan halaman operasional utama
+
+### Release dengan perubahan schema yang backward-compatible
+
+1. merge ke `main`
+2. tunggu `CI` sukses
+3. biarkan deploy production Vercel berjalan
+4. buka tab Actions
+5. jalankan workflow `Migrate Production`
+6. verifikasi aplikasi dan schema setelah migration selesai
+
+### Release dengan perubahan schema yang harus tersedia lebih dulu
+
+1. pastikan commit target sudah berada di branch yang akan dirilis
+2. dari tab Actions, jalankan workflow `Migrate Production`
+3. verifikasi `pnpm exec prisma migrate status` dan `pnpm db:migrate:deploy` sukses
+4. setelah schema siap, lanjutkan deploy production Vercel
+
+Poin penting:
+
+- deploy workflow sengaja tidak pernah menjalankan migration otomatis
+- migration production hanya dijalankan manual dari Actions
+- concurrency mencegah dua deploy production atau dua migration production berjalan paralel
+
 ## Rekomendasi urutan rollout
 
 1. siapkan database production
@@ -131,6 +189,12 @@ Jika dipakai:
 - jika Supabase aktif, uji upload logo kecil berformat PNG/JPG/WEBP
 - verifikasi query database dan koneksi Prisma normal
 
+Untuk release yang membawa migration, tambahkan verifikasi berikut:
+
+- buka workflow `Migrate Production` dan cek langkah `Preflight migration status`
+- pastikan `pnpm db:migrate:deploy` selesai tanpa drift/error
+- pastikan env database di GitHub Environment `production` sama targetnya dengan env runtime Vercel
+
 ## Recovery mismatch schema `MosqueProfile.specialContributionFee`
 
 Kasus ini relevan bila aplikasi gagal dengan Prisma `P2022` karena kolom `specialContributionFee` belum ada di database runtime.
@@ -162,6 +226,19 @@ pnpm db:generate
    - flow iuran yang membaca konfigurasi fee default
 
 Jika migration history menyatakan applied tetapi kolom belum ada, perlakukan sebagai drift schema atau mismatch database target. Rekonsiliasi tabel `_prisma_migrations` dan koneksi database sebelum rollout dilanjutkan.
+
+## Recovery jika workflow migration manual gagal
+
+Jika workflow `Migrate Production` gagal:
+
+1. hentikan rollout production berikutnya
+2. baca output `pnpm exec prisma migrate status` untuk melihat mismatch histori migration
+3. pastikan `POSTGRES_PRISMA_URL` dan `POSTGRES_URL_NON_POOLING` benar-benar menunjuk database production yang sama dengan Vercel runtime
+4. periksa tabel `_prisma_migrations` dan migration file di repository
+5. rekonsiliasi drift atau migration yang setengah jalan sebelum deploy berikutnya
+6. jalankan ulang workflow manual hanya setelah status migration konsisten kembali
+
+Jangan mengganti alur ke `prisma migrate dev` untuk recovery production. Gunakan workflow manual ini tetap dengan `pnpm db:migrate:deploy`.
 
 ## Yang belum tersedia
 

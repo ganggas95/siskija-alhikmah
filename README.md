@@ -164,6 +164,60 @@ pnpm start
 
 Panduan detail deployment ada di [DEPLOYMENT.md](./DEPLOYMENT.md).
 
+## GitHub Actions
+
+Repository ini menyiapkan tiga workflow terpisah agar validasi kode, deploy, dan migration production tidak tercampur:
+
+- `CI` di `.github/workflows/ci.yml`
+  - trigger: `pull_request` dan seluruh `push` branch
+  - menjalankan `pnpm lint`, `pnpm type-check`, `pnpm test`
+  - menjalankan e2e terhadap PostgreSQL sementara dengan `pnpm db:migrate:deploy`, `pnpm db:seed`, lalu `pnpm test:e2e`
+- `Vercel Deploy` di `.github/workflows/vercel-deploy.yml`
+  - trigger setelah workflow `CI` selesai sukses
+  - preview deploy untuk PR/branch non-`main`
+  - production deploy hanya untuk `push` ke `main`
+  - tidak menjalankan migration database
+- `Migrate Production` di `.github/workflows/migrate-production.yml`
+  - trigger manual `workflow_dispatch`
+  - menjalankan preflight `pnpm exec prisma migrate status`
+  - menjalankan `pnpm db:migrate:deploy`
+  - ditujukan untuk GitHub Environment `production`
+
+### Secrets yang dibutuhkan
+
+Repository-level secrets untuk workflow deploy Vercel:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+GitHub Environment `production` secrets untuk workflow migration manual:
+
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_URL_NON_POOLING`
+
+Prinsip operasional:
+
+- env database di GitHub Environment `production` harus menunjuk database yang sama dengan env runtime di Vercel
+- workflow deploy tidak boleh menjalankan `pnpm db:migrate`
+- workflow migration manual tidak boleh memakai `prisma migrate dev`
+
+### Menjalankan migration production manual
+
+1. buka tab Actions di GitHub
+2. pilih workflow `Migrate Production`
+3. klik `Run workflow`
+4. isi `reason`
+5. isi `confirm_target` dengan nilai tepat `production`
+6. tunggu langkah `Preflight migration status` dan `Apply production migrations` selesai
+
+Jika release membawa perubahan schema, tentukan urutan rollout berdasarkan kebutuhan kompatibilitas:
+
+- schema backward-compatible: deploy Vercel dulu, lalu jalankan migration manual
+- schema harus sudah ada sebelum kode baru aktif: jalankan migration manual dulu, lalu deploy production
+
+Jika migration gagal, tahan deploy production berikutnya sampai status `_prisma_migrations` dan schema database kembali konsisten.
+
 ## Perintah utama
 
 ```bash
