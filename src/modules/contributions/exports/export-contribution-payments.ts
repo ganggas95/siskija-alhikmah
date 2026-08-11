@@ -1,6 +1,11 @@
-import Decimal from "decimal.js";
+import { ContributionPaymentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { buildHouseholdWhere, type HouseholdFilterInput } from "@/modules/households/filters";
+import {
+  buildAnnualBillsMatrixRows,
+  buildContributionExportRowsFromMatrix,
+  type AnnualBillPaymentTotalRecord,
+} from "@/modules/contributions/annual-bills";
 
 export type ContributionExportInput = HouseholdFilterInput & { year: number };
 
@@ -10,38 +15,30 @@ export type ContributionExportRow = {
   monthlyAmounts: Array<number | null>;
 };
 
-type ContributionExportHousehold = {
-  code: string;
-  headName: string;
-  contributionBills: Array<{
-    month: number;
-    payments: Array<{ amountPaid: { toString(): string } }>;
-  }>;
-};
-
 export function mapContributionExportRows(
-  households: ContributionExportHousehold[],
+  households: Array<{
+    id: string;
+    code: string;
+    headName: string;
+    region: { name: string } | null;
+  }>,
+  bills: Array<{
+    id: string;
+    householdId: string;
+    month: number;
+    year: number;
+    status: import("@prisma/client").BillStatus;
+    amountDue: { toString(): string };
+  }>,
+  paymentTotals: AnnualBillPaymentTotalRecord[],
 ): ContributionExportRow[] {
-  return households.map((household) => {
-    const monthlyAmounts = Array<number | null>(12).fill(null);
-
-    for (const bill of household.contributionBills) {
-      if (bill.month < 1 || bill.month > 12) continue;
-      const total = bill.payments.reduce(
-        (sum, payment) => sum.plus(payment.amountPaid.toString()),
-        new Decimal(0),
-      );
-      if (total.gt(0)) {
-        monthlyAmounts[bill.month - 1] = Number(total.toString());
-      }
-    }
-
-    return {
-      code: household.code,
-      name: household.headName,
-      monthlyAmounts,
-    };
+  const rows = buildAnnualBillsMatrixRows({
+    households,
+    bills,
+    paymentTotals,
   });
+
+  return buildContributionExportRowsFromMatrix(rows);
 }
 
 export async function getContributionPaymentExportRows(
@@ -51,20 +48,53 @@ export async function getContributionPaymentExportRows(
     where: buildHouseholdWhere(input),
     orderBy: { code: "asc" },
     select: {
+      id: true,
       code: true,
       headName: true,
-      contributionBills: {
-        where: { year: input.year },
-        select: {
-          month: true,
-          payments: {
-            where: { canceledAt: null },
-            select: { amountPaid: true },
-          },
-        },
-      },
+      region: { select: { name: true } },
     },
   });
 
-  return mapContributionExportRows(households);
+  const householdIds = households.map((household) => household.id);
+  const bills =
+    householdIds.length > 0
+      ? await db.contributionBill.findMany({
+          where: {
+            canceledAt: null,
+            year: input.year,
+            householdId: { in: householdIds },
+          },
+          select: {
+            id: true,
+            householdId: true,
+            month: true,
+            year: true,
+            status: true,
+            amountDue: true,
+          },
+          orderBy: [{ household: { code: "asc" } }, { month: "asc" }],
+        })
+      : [];
+
+  const paymentTotals =
+    bills.length > 0
+      ? await db.contributionPayment.groupBy({
+          by: ["billId"],
+          where: {
+            billId: { in: bills.map((bill) => bill.id) },
+            canceledAt: null,
+            status: ContributionPaymentStatus.VERIFIED,
+          },
+          _sum: { amountPaid: true },
+        })
+      : [];
+
+  return mapContributionExportRows(
+    households,
+    bills,
+    paymentTotals.map((item) => ({
+      billId: item.billId,
+      totalPaid: item._sum.amountPaid ?? 0,
+    })),
+  );
 }

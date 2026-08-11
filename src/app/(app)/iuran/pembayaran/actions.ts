@@ -10,6 +10,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requirePermission, requireSession } from "@/lib/rbac";
 import { recordContributionPayment } from "@/modules/contributions/services/record-payment";
+import { updateDraftContributionPayment } from "@/modules/contributions/services/update-draft-payment";
 import {
   approveContributionPayment,
   approveContributionPayments,
@@ -65,12 +66,87 @@ export async function recordPaymentAction(
     });
 
     revalidatePath("/iuran/pembayaran");
+    revalidatePath("/iuran/tagihan");
     revalidatePath("/dashboard");
     revalidatePath("/buku-kas");
     return {
       success: true,
       message: "Pembayaran berhasil disimpan.",
       redirectTo: getRedirectTo(formData, "/iuran/pembayaran/tambah"),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Terjadi kesalahan server.",
+    };
+  }
+}
+
+export async function updateDraftPaymentAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requirePermission(PermissionKey.MANAGE_CONTRIBUTIONS);
+
+  try {
+    const paymentId = String(formData.get("paymentId") ?? "");
+
+    if (!paymentId) {
+      return { success: false, message: "ID pembayaran tidak ditemukan." };
+    }
+
+    const parsed = paymentFormSchema.safeParse({
+      billId: formData.get("billId"),
+      amountPaid: formData.get("amountPaid"),
+      paymentDate: formData.get("paymentDate"),
+      method: formData.get("method"),
+      notes: formData.get("notes"),
+    });
+
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: parsed.error.issues[0]?.message ?? "Input pembayaran tidak valid.",
+      };
+    }
+
+    const payment = await db.contributionPayment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        recordedById: true,
+        canceledAt: true,
+        status: true,
+      },
+    });
+
+    if (!payment || payment.canceledAt) {
+      return { success: false, message: "Data pembayaran tidak ditemukan." };
+    }
+
+    if (user.role !== "ADMIN" && payment.recordedById !== user.id) {
+      return {
+        success: false,
+        message: "Anda tidak memiliki izin untuk mengubah pembayaran draft ini.",
+      };
+    }
+
+    await updateDraftContributionPayment({
+      paymentId,
+      actorId: user.id,
+      amountPaid: parsed.data.amountPaid,
+      paymentDate: parsed.data.paymentDate,
+      method: parsed.data.method,
+      notes: parsed.data.notes || "",
+    });
+
+    revalidateContributionPaymentPaths();
+    revalidatePath("/iuran/tagihan");
+
+    return {
+      success: true,
+      message: "Pembayaran draft berhasil diperbarui.",
+      redirectTo: getRedirectTo(formData, "/iuran/pembayaran"),
     };
   } catch (error) {
     return {
