@@ -120,11 +120,44 @@ pnpm dev
 
 Lalu buka [localhost:3000](http://localhost:3000).
 
+Catatan:
+
+- `pnpm db:migrate` hanya untuk development lokal karena menjalankan `prisma migrate dev`.
+- Untuk server shared, staging, atau production gunakan `pnpm db:migrate:deploy`.
+
+## Recovery Prisma P2022 untuk `MosqueProfile.specialContributionFee`
+
+Jika runtime melempar error Prisma `P2022` untuk kolom `MosqueProfile.specialContributionFee`, repository ini biasanya sudah benar dan database target yang tertinggal migration.
+
+Urutan recovery yang benar:
+
+1. pastikan `POSTGRES_PRISMA_URL` dan `POSTGRES_URL_NON_POOLING` menunjuk host, database, dan schema yang sama
+2. cek status migration:
+
+```bash
+pnpm prisma migrate status
+```
+
+3. deploy migration ke database target:
+
+```bash
+pnpm db:migrate:deploy
+pnpm db:generate
+```
+
+4. verifikasi migration `20260803100000_organization_contribution_settings` sudah terpasang dan tabel `MosqueProfile` memiliki kolom:
+   - `organizationName`
+   - `specialContributionFee`
+5. buka kembali halaman profil masjid dan dashboard
+
+Jika histori migration sudah tercatat applied tetapi kolom masih tidak ada, berarti ada drift atau migrate diarahkan ke database berbeda. Rekonsiliasi schema dulu sebelum menjalankan aplikasi lagi.
+
 ## Build dan run production
 
 ```bash
 pnpm install
 pnpm db:generate
+pnpm db:migrate:deploy
 pnpm build
 pnpm start
 ```
@@ -143,6 +176,7 @@ pnpm test
 pnpm test:e2e
 pnpm db:generate
 pnpm db:migrate
+pnpm db:migrate:deploy
 pnpm db:seed
 pnpm db:seed:staging
 pnpm import:jamaah-master

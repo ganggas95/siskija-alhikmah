@@ -45,6 +45,13 @@ export async function recordContributionPayment(input: RecordPaymentInput) {
     throw new Error("Tagihan dibebaskan dan tidak dapat menerima pembayaran.");
   }
 
+  if (
+    bill.status !== BillStatus.BELUM_BAYAR &&
+    bill.status !== BillStatus.SEBAGIAN
+  ) {
+    throw new Error("Tagihan ini tidak lagi dapat menerima pembayaran.");
+  }
+
   if (amountPaidDecimal.lte(0)) {
     throw new Error("Nominal pembayaran harus lebih besar dari nol.");
   }

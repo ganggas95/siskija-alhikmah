@@ -3,15 +3,10 @@ import { HouseholdStatus } from "@prisma/client";
 import { createAuditLog } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getContributionFeeConfig, resolveContributionAmount } from "./contribution-settings";
-import { generateYearlyBills } from "./generate-yearly-bills";
 
 type GenerateBillsInput = { year: number; month: number; actorId: string };
 
 export async function generateMonthlyBills(input: GenerateBillsInput) {
-  if (input.month < 1 || input.month > 12) {
-    throw new Error("Bulan harus antara 1 sampai 12.");
-  }
-
   const feeConfig = await getContributionFeeConfig();
   const households = await db.household.findMany({ where: { status: HouseholdStatus.ACTIVE, deletedAt: null }, orderBy: { code: "asc" } });
   return db.$transaction(async (tx) => {
@@ -23,5 +18,3 @@ export async function generateMonthlyBills(input: GenerateBillsInput) {
     return { created };
   }, { maxWait: 10000, timeout: 15000 });
 }
-
-export { generateYearlyBills };

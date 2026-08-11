@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:staging": "tsx prisma/seed-staging.ts",
     "import:jamaah-master": "tsx scripts/import-jamaah-master.ts"

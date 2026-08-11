@@ -54,10 +54,15 @@ pnpm db:generate
 ### 3. Jalankan migration
 
 ```bash
-pnpm db:migrate
+pnpm db:migrate:deploy
 ```
 
-Untuk server production yang ketat, evaluasi ulang penggunaan `prisma migrate dev` karena script saat ini masih mengarah ke command development Prisma. Bila perlu, siapkan script deploy migration terpisah sebelum rollout production multi-user.
+Untuk production, shared staging, atau environment multi-user, jangan gunakan `pnpm db:migrate` karena script itu menjalankan `prisma migrate dev`.
+
+Gunakan pembagian berikut:
+
+- `pnpm db:migrate` untuk development lokal
+- `pnpm db:migrate:deploy` untuk deployment non-development
 
 ### 4. Seed data awal bila diperlukan
 
@@ -122,8 +127,41 @@ Jika dipakai:
 - login dengan akun admin yang valid
 - cek `/dashboard`
 - cek halaman `/pengaturan/profil-masjid`
+- cek query `MosqueProfile` tidak lagi gagal pada field `specialContributionFee`
 - jika Supabase aktif, uji upload logo kecil berformat PNG/JPG/WEBP
 - verifikasi query database dan koneksi Prisma normal
+
+## Recovery mismatch schema `MosqueProfile.specialContributionFee`
+
+Kasus ini relevan bila aplikasi gagal dengan Prisma `P2022` karena kolom `specialContributionFee` belum ada di database runtime.
+
+Checklist recovery:
+
+1. pastikan `POSTGRES_PRISMA_URL` dan `POSTGRES_URL_NON_POOLING` menunjuk database yang sama
+2. cek status migration:
+
+```bash
+pnpm prisma migrate status
+```
+
+3. deploy migration repository:
+
+```bash
+pnpm db:migrate:deploy
+pnpm db:generate
+```
+
+4. verifikasi migration `20260803100000_organization_contribution_settings` sudah applied
+5. verifikasi tabel `MosqueProfile` sudah memiliki:
+   - `organizationName`
+   - `specialContributionFee` bertipe `DECIMAL(18,2)`
+6. verifikasi data existing memiliki nilai `specialContributionFee` yang valid
+7. restart aplikasi lalu uji:
+   - `/pengaturan/profil-masjid`
+   - dashboard
+   - flow iuran yang membaca konfigurasi fee default
+
+Jika migration history menyatakan applied tetapi kolom belum ada, perlakukan sebagai drift schema atau mismatch database target. Rekonsiliasi tabel `_prisma_migrations` dan koneksi database sebelum rollout dilanjutkan.
 
 ## Yang belum tersedia
 
@@ -139,7 +177,7 @@ Jika dipakai:
 
 ### Script migration
 
-Script `pnpm db:migrate` memakai `prisma migrate dev`, yang nyaman untuk development tetapi bukan alur deploy production yang paling ketat. Untuk environment production bersama, sebaiknya tambahkan script deploy migration terpisah sebelum scale-up.
+Script `pnpm db:migrate` memakai `prisma migrate dev`, yang nyaman untuk development tetapi tidak boleh dijadikan alur deploy production. Deployment harus memakai `pnpm db:migrate:deploy` agar migration repository diterapkan tanpa workflow development Prisma.
 
 ### Login lockout
 

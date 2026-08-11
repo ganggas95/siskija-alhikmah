@@ -26,6 +26,7 @@ type BillOption = {
 
 type PaymentFormProps = {
   bills: BillOption[];
+  initialBillId?: string;
   redirectTo?: string;
   initialBillId?: string;
   paymentId?: string;
@@ -47,6 +48,7 @@ function toDateInputValue(value: Date) {
 
 export function PaymentForm({
   bills,
+  initialBillId,
   redirectTo = "/iuran/pembayaran/tambah",
   initialBillId,
   paymentId,
@@ -115,6 +117,7 @@ export function PaymentForm({
           <select
             id="bill-select"
             name="billId"
+            defaultValue={initialBillId ?? ""}
             className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
             required
             defaultValue={initialBillId}

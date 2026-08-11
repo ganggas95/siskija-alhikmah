@@ -13,8 +13,8 @@ export default async function GenerateBillsPage() {
   return (
     <section className="space-y-6">
       <PageHeader
-        title="Generate Tagihan Tahunan"
-        description="Buat tagihan Januari sampai Desember untuk seluruh jamaah aktif dari halaman khusus."
+        title="Generate Tagihan"
+        description="Buat tagihan bulanan untuk seluruh jamaah aktif dari halaman khusus."
         icon={ScrollText}
       />
       <div className="max-w-2xl">
