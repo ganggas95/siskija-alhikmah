@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "**"
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: Lint, type-check, and unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Run lint
+        run: pnpm lint
+
+      - name: Run type-check
+        run: pnpm type-check
+
+      - name: Run unit and integration tests
+        run: pnpm test
+
+  e2e:
+    name: E2E with PostgreSQL
+    runs-on: ubuntu-latest
+    needs: quality-gate
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: sismata_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sismata_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_URL: postgresql://postgres:postgres@127.0.0.1:5432/sismata_ci
+      POSTGRES_PRISMA_URL: postgresql://postgres:postgres@127.0.0.1:5432/sismata_ci
+      POSTGRES_URL_NON_POOLING: postgresql://postgres:postgres@127.0.0.1:5432/sismata_ci
+      POSTGRES_USER: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PASSWORD: postgres
+      AUTH_SECRET: ci-auth-secret-change-me
+      AUTH_TRUST_HOST: true
+      APP_ENV: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Apply Prisma migrations
+        run: pnpm db:migrate:deploy
+
+      - name: Seed test database
+        run: pnpm db:seed
+
+      - name: Run end-to-end tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
