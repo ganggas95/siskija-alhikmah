@@ -1,5 +1,6 @@
 import { ContributionPaymentStatus, PermissionKey } from "@prisma/client";
 import { CreditCard } from "lucide-react";
+import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
@@ -11,14 +12,26 @@ export default async function EditContributionDraftPaymentPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requirePermission(PermissionKey.MANAGE_CONTRIBUTIONS);
+  const user = await requirePermission(PermissionKey.MANAGE_CONTRIBUTIONS);
   const { id } = await params;
 
   const payment = await db.contributionPayment.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      billId: true,
+      recordedById: true,
+      canceledAt: true,
+      status: true,
+      paymentDate: true,
+      amountPaid: true,
+      method: true,
+      notes: true,
       bill: {
-        include: {
+        select: {
+          amountDue: true,
+          month: true,
+          year: true,
           household: {
             select: {
               code: true,
@@ -31,11 +44,15 @@ export default async function EditContributionDraftPaymentPage({
   });
 
   if (!payment || payment.canceledAt) {
-    throw new Error("Pembayaran draft tidak ditemukan.");
+    notFound();
+  }
+
+  if (user.role !== "ADMIN" && payment.recordedById !== user.id) {
+    notFound();
   }
 
   if (payment.status !== ContributionPaymentStatus.DRAFT) {
-    throw new Error("Hanya pembayaran berstatus DRAFT yang dapat diubah.");
+    notFound();
   }
 
   return (
