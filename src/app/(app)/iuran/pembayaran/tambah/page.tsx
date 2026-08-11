@@ -1,32 +1,67 @@
-import { PermissionKey } from "@prisma/client";
+import { BillStatus, Prisma, PermissionKey } from "@prisma/client";
 import { CreditCard } from "lucide-react";
 
 import { PageHeader } from "@/components/app/page-header";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
+import {
+  getQueryParam,
+  resolveSearchParams,
+  type SearchParamsInput,
+} from "@/lib/table-query";
 import { PaymentForm } from "../_components/payment-form";
 
-export default async function AddContributionPaymentPage() {
-  await requirePermission(PermissionKey.MANAGE_CONTRIBUTIONS);
+const payableBillWhere = {
+  canceledAt: null,
+  status: { in: [BillStatus.BELUM_BAYAR, BillStatus.SEBAGIAN] },
+} satisfies Prisma.ContributionBillWhereInput;
 
-  const bills = await db.contributionBill.findMany({
-    include: {
-      household: {
-        select: {
-          code: true,
-          headName: true,
+export default async function AddContributionPaymentPage({
+  searchParams,
+}: {
+  searchParams?: SearchParamsInput;
+}) {
+  await requirePermission(PermissionKey.MANAGE_CONTRIBUTIONS);
+  const resolvedSearchParams = await resolveSearchParams(searchParams);
+  const selectedBillId = getQueryParam(resolvedSearchParams, "billId");
+
+  const [bills, selectedBill] = await Promise.all([
+    db.contributionBill.findMany({
+      include: {
+        household: {
+          select: {
+            code: true,
+            headName: true,
+          },
         },
       },
-    },
-    where: {
-      canceledAt: null,
-      status: { in: ["BELUM_BAYAR", "SEBAGIAN"] },
-    },
-    orderBy: [{ year: "desc" }, { month: "desc" }, { household: { code: "asc" } }],
-    take: 50,
-  });
+      where: payableBillWhere,
+      orderBy: [{ year: "desc" }, { month: "desc" }, { household: { code: "asc" } }],
+      take: 50,
+    }),
+    selectedBillId
+      ? db.contributionBill.findFirst({
+          include: {
+            household: {
+              select: {
+                code: true,
+                headName: true,
+              },
+            },
+          },
+          where: {
+            id: selectedBillId,
+            ...payableBillWhere,
+          },
+        })
+      : Promise.resolve(null),
+  ]);
 
-  const billsFormatted = bills.map((b) => ({
+  const allBills = selectedBill
+    ? [selectedBill, ...bills.filter((bill) => bill.id !== selectedBill.id)]
+    : bills;
+
+  const billsFormatted = allBills.map((b) => ({
     ...b,
     amountDue: b.amountDue.toString(),
   }));
@@ -39,7 +74,7 @@ export default async function AddContributionPaymentPage() {
         icon={CreditCard}
       />
       <div className="max-w-3xl">
-        <PaymentForm bills={billsFormatted} />
+        <PaymentForm bills={billsFormatted} initialBillId={selectedBill?.id} />
       </div>
     </section>
   );

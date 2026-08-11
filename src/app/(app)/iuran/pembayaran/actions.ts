@@ -203,6 +203,7 @@ export async function cancelSelectedPaymentsAction(formData: FormData): Promise<
 
 function revalidateContributionPaymentPaths() {
   revalidatePath("/iuran/pembayaran");
+  revalidatePath("/iuran/tagihan");
   revalidatePath("/dashboard");
   revalidatePath("/buku-kas");
   revalidatePath("/laporan/iuran");
