@@ -88,6 +88,11 @@ function createFakeTx() {
         return data;
       },
     },
+    auditLog: {
+      async create() {
+        return {};
+      },
+    },
   };
 }
 
@@ -100,6 +105,10 @@ function makeContext() {
     importedById: "user-1",
     paymentDate: new Date("2026-07-30T00:00:00.000Z"),
     defaultContributionAmount: new Decimal("10000"),
+    contributionFeeConfig: {
+      normal: new Decimal("10000"),
+      special: new Decimal("5000"),
+    },
   };
 }
 
@@ -128,6 +137,34 @@ describe("detectContributionImportHeader", () => {
 });
 
 describe("allocateCell", () => {
+  it("membuat tagihan nominal khusus untuk jamaah lansia", async () => {
+    const tx = createFakeTx();
+    await allocateCell(
+      tx as never,
+      makeContext(),
+      makeRow(),
+      { month: 1, column: 2, columnLabel: "Januari", rawValue: "5000" },
+      "household-1",
+      { isElderly: true, isDisabled: false },
+    );
+
+    expect(tx.billCreates[0]?.amountDue.toString()).toBe("5000");
+  });
+
+  it("membuat tagihan nominal khusus untuk jamaah disabilitas", async () => {
+    const tx = createFakeTx();
+    await allocateCell(
+      tx as never,
+      makeContext(),
+      makeRow(),
+      { month: 1, column: 2, columnLabel: "Januari", rawValue: "5000" },
+      "household-1",
+      { isElderly: false, isDisabled: true },
+    );
+
+    expect(tx.billCreates[0]?.amountDue.toString()).toBe("5000");
+  });
+
   it("mengalokasikan nominal pas untuk satu bulan", async () => {
     const tx = createFakeTx();
     const result = await allocateCell(

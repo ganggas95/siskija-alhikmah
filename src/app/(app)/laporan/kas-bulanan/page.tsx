@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
@@ -165,6 +166,17 @@ export default async function MonthlyCashReportPage({
               </tr>
             </thead>
             <tbody>
+              {pagedEntries.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <TableEmptyState
+                      icon={FileBarChart2}
+                      title="Belum ada transaksi pada periode ini"
+                      description="Coba ubah periode atau filter laporan."
+                    />
+                  </td>
+                </tr>
+              ) : null}
               {pagedEntries.map((entry) => (
                 <tr key={entry.id} className="border-b border-slate-100">
                   <td className="px-3 py-3">{entry.transactionDate.toLocaleDateString("id-ID")}</td>

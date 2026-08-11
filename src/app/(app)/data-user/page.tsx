@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { SortableHeader } from "@/components/table/sortable-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
 import { parseSortParam, type SortState } from "@/lib/table-sort";
@@ -226,7 +227,11 @@ export default async function UserPage({
               ) : (
                 <tr>
                   <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
-                    Tidak ada data user yang sesuai dengan filter.
+                    <TableEmptyState
+                      icon={ShieldUser}
+                      title="Belum ada data user"
+                      description="Coba ubah filter atau tambahkan user baru."
+                    />
                   </td>
                 </tr>
               )}

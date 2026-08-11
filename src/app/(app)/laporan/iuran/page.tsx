@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
+import { TableEmptyState } from "@/components/table/empty-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
@@ -199,6 +200,17 @@ export default async function ContributionReportPage({
               </tr>
             </thead>
             <tbody>
+              {bills.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <TableEmptyState
+                      icon={HandCoins}
+                      title="Belum ada tagihan pada periode ini"
+                      description="Coba ubah periode atau filter laporan."
+                    />
+                  </td>
+                </tr>
+              ) : null}
               {bills.map((bill) => (
                 <tr key={bill.id} className="border-b border-slate-100">
                   <td className="px-3 py-3">{`${bill.month}/${bill.year}`}</td>

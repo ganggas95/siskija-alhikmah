@@ -105,15 +105,21 @@ async function main() {
 
   await prisma.mosqueProfile.upsert({
     where: { id: "default-mosque-profile" },
-    update: {},
+    update: {
+      organizationName: "Yayasan Al Barokah",
+      defaultContributionFee: "7000",
+      specialContributionFee: "5000",
+    },
     create: {
       id: "default-mosque-profile",
       name: "Masjid Al Barokah",
+      organizationName: "Yayasan Al Barokah",
       address: "Jl. Kebajikan No. 10",
       region: "Dusun Tengah",
       chairmanName: "Ahmad Fadhil",
       treasurerName: "Siti Aminah",
       defaultContributionFee: "7000",
+      specialContributionFee: "5000",
       fiscalYear: 2026,
     },
   });

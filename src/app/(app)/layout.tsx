@@ -35,7 +35,7 @@ const navigationGroups: SidebarNavGroup[] = [
     items: [
       {
         href: "/iuran/tagihan",
-        label: "Tagihan",
+        label: "Tagihan Tahunan",
         icon: "bill",
         permission: PermissionKey.MANAGE_CONTRIBUTIONS,
       },
@@ -90,6 +90,17 @@ const navigationGroups: SidebarNavGroup[] = [
         label: "Data User",
         icon: "user",
         permission: PermissionKey.MANAGE_USERS,
+      },
+    ],
+  },
+  {
+    label: "Pengaturan",
+    items: [
+      {
+        href: "/pengaturan/profil-masjid",
+        label: "Profil Masjid & Organisasi",
+        icon: "settings",
+        permission: PermissionKey.MANAGE_SETTINGS,
       },
     ],
   },

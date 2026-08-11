@@ -3,13 +3,16 @@ import {
   CategoryType,
   ContributionPaymentStatus,
   IncomeStatus,
-  LedgerDirection,
-  LedgerSourceType,
   type PaymentMethod,
 } from "@prisma/client";
 import Decimal from "decimal.js";
 
 import { db } from "@/lib/db";
+import { createAuditLog } from "@/lib/audit";
+import {
+  refreshContributionBillStatus,
+} from "@/modules/contributions/domain/bill-status";
+import { postLedgerEntry } from "@/modules/ledger";
 import { createReceiptNumber, createTransactionNumber } from "@/modules/shared/numbering";
 
 type RecordPaymentInput = {
@@ -19,19 +22,8 @@ type RecordPaymentInput = {
   method: PaymentMethod;
   notes?: string;
   actorId: string;
+  status?: ContributionPaymentStatus;
 };
-
-function deriveBillStatus(amountDue: Decimal, totalPaid: Decimal) {
-  if (totalPaid.lte(0)) {
-    return BillStatus.BELUM_BAYAR;
-  }
-
-  if (totalPaid.greaterThanOrEqualTo(amountDue)) {
-    return BillStatus.LUNAS;
-  }
-
-  return BillStatus.SEBAGIAN;
-}
 
 export async function recordContributionPayment(input: RecordPaymentInput) {
   const bill = await db.contributionBill.findUnique({
@@ -44,12 +36,17 @@ export async function recordContributionPayment(input: RecordPaymentInput) {
   }
 
   const amountPaidDecimal = new Decimal(input.amountPaid);
-  const amountDueDecimal = new Decimal(bill.amountDue.toString());
 
-  if (amountPaidDecimal.lessThan(amountDueDecimal)) {
-    throw new Error(
-      `Nominal dibayar (Rp${new Intl.NumberFormat("id-ID").format(Number(input.amountPaid))}) kurang dari nominal tagihan (Rp${new Intl.NumberFormat("id-ID").format(Number(bill.amountDue))}).`,
-    );
+  if (bill.status === BillStatus.DIBATALKAN || bill.canceledAt) {
+    throw new Error("Tagihan sudah dibatalkan.");
+  }
+
+  if (bill.status === BillStatus.DIBEBASKAN) {
+    throw new Error("Tagihan dibebaskan dan tidak dapat menerima pembayaran.");
+  }
+
+  if (amountPaidDecimal.lte(0)) {
+    throw new Error("Nominal pembayaran harus lebih besar dari nol.");
   }
 
   const incomeCategory = await db.transactionCategory.findUnique({
@@ -66,18 +63,25 @@ export async function recordContributionPayment(input: RecordPaymentInput) {
   }
 
   return db.$transaction(async (tx) => {
+    const paymentStatus = input.status ?? ContributionPaymentStatus.VERIFIED;
     const income = await tx.incomeTransaction.create({
       data: {
-        transactionNumber: createTransactionNumber("INC-IUR"),
+        transactionNumber: createTransactionNumber("INC-IUR", input.paymentDate),
         transactionDate: input.paymentDate,
         categoryId: incomeCategory.id,
         sourceName: bill.household.headName,
         amount: input.amountPaid,
         method: input.method,
         description: `Pembayaran iuran ${bill.household.headName}`,
-        status: IncomeStatus.VERIFIED,
+        status:
+          paymentStatus === ContributionPaymentStatus.VERIFIED
+            ? IncomeStatus.VERIFIED
+            : IncomeStatus.DRAFT,
         createdById: input.actorId,
-        verifiedById: input.actorId,
+        verifiedById:
+          paymentStatus === ContributionPaymentStatus.VERIFIED
+            ? input.actorId
+            : null,
       },
     });
 
@@ -87,53 +91,31 @@ export async function recordContributionPayment(input: RecordPaymentInput) {
         amountPaid: input.amountPaid,
         paymentDate: input.paymentDate,
         method: input.method,
-        status: ContributionPaymentStatus.VERIFIED,
+        status: paymentStatus,
         notes: input.notes,
-        receiptNumber: createReceiptNumber(),
+        receiptNumber: createReceiptNumber(input.paymentDate),
         recordedById: input.actorId,
         incomeTransactionId: income.id,
       },
     });
 
-    const validPayments = await tx.contributionPayment.findMany({
-      where: {
-        billId: bill.id,
-        canceledAt: null,
-        status: ContributionPaymentStatus.VERIFIED,
-      },
-      select: { amountPaid: true },
-    });
-
-    const totalPaid = validPayments.reduce(
-      (total, item) => total.plus(item.amountPaid.toString()),
-      new Decimal(0),
-    );
-
-    const nextStatus = deriveBillStatus(
-      new Decimal(bill.amountDue.toString()),
-      totalPaid,
-    );
-
-    await tx.contributionBill.update({
-      where: { id: bill.id },
-      data: { status: nextStatus },
-    });
-
-    await tx.cashLedger.create({
-      data: {
+    if (paymentStatus === ContributionPaymentStatus.VERIFIED) {
+      await postLedgerEntry(tx, {
         transactionDate: input.paymentDate,
-        direction: LedgerDirection.DEBIT,
-        sourceType: LedgerSourceType.CONTRIBUTION_PAYMENT,
+        direction: "DEBIT",
+        sourceType: "CONTRIBUTION_PAYMENT",
         sourceId: payment.id,
         transactionNumber: income.transactionNumber,
         description: `Pembayaran iuran ${bill.household.headName}`,
         amount: input.amountPaid,
         incomeId: income.id,
-      },
-    });
+      });
+    }
 
-    await tx.auditLog.create({
-      data: {
+    const nextStatus = await refreshContributionBillStatus(tx, bill.id);
+
+    await createAuditLog(
+      {
         userId: input.actorId,
         action: "RECORD_CONTRIBUTION_PAYMENT",
         entity: "ContributionPayment",
@@ -141,10 +123,12 @@ export async function recordContributionPayment(input: RecordPaymentInput) {
         afterData: {
           billId: bill.id,
           amountPaid: input.amountPaid,
-          status: nextStatus,
+          paymentStatus,
+          billStatus: nextStatus,
         },
       },
-    });
+      tx,
+    );
 
     return payment;
   });
