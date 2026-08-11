@@ -28,7 +28,6 @@ type PaymentFormProps = {
   bills: BillOption[];
   initialBillId?: string;
   redirectTo?: string;
-  initialBillId?: string;
   paymentId?: string;
   defaultValues?: {
     paymentDate: string;
@@ -50,7 +49,6 @@ export function PaymentForm({
   bills,
   initialBillId,
   redirectTo = "/iuran/pembayaran/tambah",
-  initialBillId,
   paymentId,
   defaultValues,
   mode = "create",
@@ -120,7 +118,6 @@ export function PaymentForm({
             defaultValue={initialBillId ?? ""}
             className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
             required
-            defaultValue={initialBillId}
             disabled={shouldLockBillSelection}
             onChange={(e) => {
               setSelectedBillId(e.currentTarget.value);
