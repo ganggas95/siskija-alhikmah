@@ -234,6 +234,8 @@ model ContributionBill {
   @@unique([householdId, year, month])
   @@index([year, month])
   @@index([status])
+  @@index([householdId, year])
+  @@index([year, status])
 }
 
 model ContributionPayment {
@@ -264,6 +266,7 @@ model ContributionPayment {
   @@index([status])
   @@index([paymentDate])
   @@index([importBatchId])
+  @@index([billId, status, canceledAt])
 }
 
 model ImportBatch {

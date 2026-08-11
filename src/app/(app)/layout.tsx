@@ -35,7 +35,7 @@ const navigationGroups: SidebarNavGroup[] = [
     items: [
       {
         href: "/iuran/tagihan",
-        label: "Tagihan",
+        label: "Tagihan Tahunan",
         icon: "bill",
         permission: PermissionKey.MANAGE_CONTRIBUTIONS,
       },
