@@ -28,6 +28,7 @@ export default async function ContributionBillsPage({
   const tabRegion = getQueryParam(resolvedSearchParams, "tabRegion");
   const statusFilter = getQueryParam(resolvedSearchParams, "status");
   const yearFilter = getQueryParam(resolvedSearchParams, "year");
+  const fullscreen = getQueryParam(resolvedSearchParams, "fullscreen");
   const { page, pageSize } = getPaginationState(resolvedSearchParams, 20);
   const now = new Date();
   const year = Number(yearFilter) >= 2000 ? Number(yearFilter) : now.getFullYear();
@@ -72,6 +73,7 @@ export default async function ContributionBillsPage({
         year={year}
         page={matrix.safePage}
         pageSize={pageSize}
+        isFullscreen={fullscreen === "1"}
         toolbarProps={{
           query,
           year,

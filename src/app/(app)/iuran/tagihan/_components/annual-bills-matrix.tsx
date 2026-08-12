@@ -2,6 +2,7 @@
 
 import Decimal from "decimal.js";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   CircleDashed,
@@ -21,7 +22,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -57,6 +57,7 @@ export function AnnualBillsMatrix({
   year,
   page,
   pageSize,
+  isFullscreen,
   toolbarProps,
 }: {
   tabs: AnnualBillsRegionTab[];
@@ -67,21 +68,14 @@ export function AnnualBillsMatrix({
   year: number;
   page: number;
   pageSize: number;
+  isFullscreen: boolean;
   toolbarProps: Omit<AnnualBillsToolbarProps, "mode">;
 }) {
+  const router = useRouter();
   const hasAnyRows = tabs.some((tab) => tab.totalHouseholds > 0);
-
-  if (!hasAnyRows) {
-    return (
-      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <TableEmptyState
-          icon={ScrollText}
-          title="Belum ada household pada matriks ini"
-          description="Coba ubah filter atau generate tagihan tahunan lebih dulu."
-        />
-      </div>
-    );
-  }
+  const fullscreenHref = `${PATHNAME}${buildQueryString(currentSearchParams, {
+    fullscreen: "1",
+  })}`;
 
   return (
     <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -92,12 +86,29 @@ export function AnnualBillsMatrix({
             Setiap baris mewakili satu kepala keluarga. Klik sel belum lunas untuk langsung ke form pembayaran.
           </p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button type="button" variant="outline" size="icon" aria-label="Perbesar matriks tagihan">
-              <Expand className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Perbesar matriks tagihan"
+          asChild
+        >
+          <Link href={fullscreenHref} scroll={false}>
+            <span className="sr-only">Perbesar matriks tagihan</span>
+            <Expand className="h-4 w-4" />
+          </Link>
+        </Button>
+        <Dialog
+          open={isFullscreen}
+          onOpenChange={(open) => {
+            router.push(
+              `${PATHNAME}${buildQueryString(currentSearchParams, {
+                fullscreen: open ? "1" : undefined,
+              })}`,
+              { scroll: false },
+            );
+          }}
+        >
           <DialogContent className="left-0 top-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 p-0">
             <div className="flex h-full min-h-0 min-w-0 flex-col bg-white">
               <DialogHeader className="border-b border-slate-200 px-6 py-4">
@@ -118,6 +129,7 @@ export function AnnualBillsMatrix({
                   pageSize={pageSize}
                   toolbarProps={toolbarProps}
                   mode="fullscreen"
+                  hasAnyRows={hasAnyRows}
                 />
               </div>
             </div>
@@ -136,6 +148,7 @@ export function AnnualBillsMatrix({
         pageSize={pageSize}
         toolbarProps={toolbarProps}
         mode="embedded"
+        hasAnyRows={hasAnyRows}
       />
     </div>
   );
@@ -152,6 +165,7 @@ function AnnualBillsMatrixContent({
   pageSize,
   toolbarProps,
   mode,
+  hasAnyRows,
 }: {
   tabs: AnnualBillsRegionTab[];
   activeTab: AnnualBillsRegionTab;
@@ -163,61 +177,72 @@ function AnnualBillsMatrixContent({
   pageSize: number;
   toolbarProps: Omit<AnnualBillsToolbarProps, "mode">;
   mode: "embedded" | "fullscreen";
+  hasAnyRows: boolean;
 }) {
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
       <AnnualBillsToolbar {...toolbarProps} mode={mode} />
 
-      <Tabs value={activeTab.key} className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-        <TabsList className="h-auto flex-wrap justify-start gap-2 rounded-2xl bg-slate-100 p-2">
-          {tabs.map((tab) => {
-            const href = `${PATHNAME}${buildQueryString(currentSearchParams, {
-              tabRegion: tab.key === "all" ? undefined : tab.key,
-              page: undefined,
-            })}`;
+      {!hasAnyRows ? (
+        <TableEmptyState
+          icon={ScrollText}
+          title="Belum ada household pada matriks ini"
+          description="Coba ubah filter atau generate tagihan tahunan lebih dulu."
+        />
+      ) : null}
 
-            return (
-              <TabsTrigger key={tab.key} value={tab.key} asChild className="px-3 py-2">
-                <Link href={href} scroll={false}>
-                  <span>{tab.label}</span>
-                  <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-700">
-                    {tab.totalHouseholds}
-                  </span>
-                </Link>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
+      {hasAnyRows ? (
+        <Tabs value={activeTab.key} className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+          <TabsList className="h-auto flex-wrap justify-start gap-2 rounded-2xl bg-slate-100 p-2">
+            {tabs.map((tab) => {
+              const href = `${PATHNAME}${buildQueryString(currentSearchParams, {
+                tabRegion: tab.key === "all" ? undefined : tab.key,
+                page: undefined,
+              })}`;
 
-        <TabsContent value={activeTab.key} className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-          <div className={mode === "fullscreen" ? "min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto" : "overflow-x-auto"}>
-            {rows.length === 0 ? (
-              <TableEmptyState
-                icon={ScrollText}
-                title={`Belum ada keluarga pada tab ${activeTab.label}`}
-                description="Coba ubah pencarian, filter, atau pilih wilayah lain."
-              />
-            ) : (
-              <MatrixTable
-                rows={rows}
-                currentSearchParams={currentSearchParams}
-                year={year}
-                stickyCellClassName="bg-white"
-                containerClassName={mode === "fullscreen" ? "h-full min-w-max overflow-visible" : "overflow-x-auto"}
-              />
-            )}
-          </div>
+              return (
+                <TabsTrigger key={tab.key} value={tab.key} asChild className="px-3 py-2">
+                  <Link href={href} scroll={false}>
+                    <span>{tab.label}</span>
+                    <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-700">
+                      {tab.totalHouseholds}
+                    </span>
+                  </Link>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
 
-          <TablePagination
-            pathname={PATHNAME}
-            searchParams={currentSearchParams}
-            totalItems={totalItems}
-            page={page}
-            pageSize={pageSize}
-            itemLabel="keluarga"
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value={activeTab.key} className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+            <div className={mode === "fullscreen" ? "min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto" : "overflow-x-auto"}>
+              {rows.length === 0 ? (
+                <TableEmptyState
+                  icon={ScrollText}
+                  title={`Belum ada keluarga pada tab ${activeTab.label}`}
+                  description="Coba ubah pencarian, filter, atau pilih wilayah lain."
+                />
+              ) : (
+                <MatrixTable
+                  rows={rows}
+                  currentSearchParams={currentSearchParams}
+                  year={year}
+                  stickyCellClassName="bg-white"
+                  containerClassName={mode === "fullscreen" ? "h-full min-w-max overflow-visible" : "overflow-x-auto"}
+                />
+              )}
+            </div>
+
+            <TablePagination
+              pathname={PATHNAME}
+              searchParams={currentSearchParams}
+              totalItems={totalItems}
+              page={page}
+              pageSize={pageSize}
+              itemLabel="keluarga"
+            />
+          </TabsContent>
+        </Tabs>
+      ) : null}
     </div>
   );
 }
