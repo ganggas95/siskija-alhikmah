@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { TableEmptyState } from "@/components/table/empty-state";
+import { TablePagination } from "@/components/table/table-pagination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -34,25 +36,42 @@ import { formatRupiah } from "@/lib/money";
 import {
   CONTRIBUTION_MONTH_LABELS,
   type AnnualBillsMatrixRow,
+  type AnnualBillsRegionTab,
 } from "@/modules/contributions/annual-bills";
 import { BillStatus } from "@prisma/client";
+import type { AnnualBillsToolbarProps } from "./annual-bills-toolbar";
+import { AnnualBillsToolbar } from "./annual-bills-toolbar";
 import { BillCellGenerateButton } from "./bill-cell-generate-button";
 import { BillPaymentModal } from "./bill-payment-modal";
 import { PaymentActionButton } from "../../pembayaran/_components/payment-action-button";
 import { cancelPaymentAction } from "../../pembayaran/actions";
 
+const PATHNAME = "/iuran/tagihan";
+
 export function AnnualBillsMatrix({
+  tabs,
+  activeTab,
   rows,
+  totalItems,
   currentSearchParams,
   year,
-  toolbar,
+  page,
+  pageSize,
+  toolbarProps,
 }: {
+  tabs: AnnualBillsRegionTab[];
+  activeTab: AnnualBillsRegionTab;
   rows: AnnualBillsMatrixRow[];
+  totalItems: number;
   currentSearchParams: Record<string, QueryValue>;
   year: number;
-  toolbar?: React.ReactNode;
+  page: number;
+  pageSize: number;
+  toolbarProps: Omit<AnnualBillsToolbarProps, "mode">;
 }) {
-  if (rows.length === 0) {
+  const hasAnyRows = tabs.some((tab) => tab.totalHouseholds > 0);
+
+  if (!hasAnyRows) {
     return (
       <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <TableEmptyState
@@ -80,35 +99,125 @@ export function AnnualBillsMatrix({
             </Button>
           </DialogTrigger>
           <DialogContent className="left-0 top-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 p-0">
-            <div className="flex h-full min-h-0 flex-col bg-white">
+            <div className="flex h-full min-h-0 min-w-0 flex-col bg-white">
               <DialogHeader className="border-b border-slate-200 px-6 py-4">
                 <DialogTitle>Matriks Tagihan Tahunan</DialogTitle>
                 <DialogDescription>
                   Tampilan fokus layar penuh untuk melihat lebih banyak kolom dan aksi per sel.
                 </DialogDescription>
               </DialogHeader>
-              <div className="min-h-0 flex-1 overflow-hidden px-6 py-4">
-                <MatrixTable
+              <div className="min-h-0 min-w-0 flex-1 overflow-hidden px-6 py-4">
+                <AnnualBillsMatrixContent
+                  tabs={tabs}
+                  activeTab={activeTab}
                   rows={rows}
+                  totalItems={totalItems}
                   currentSearchParams={currentSearchParams}
                   year={year}
-                  stickyCellClassName="bg-white"
-                  containerClassName="h-full overflow-auto"
+                  page={page}
+                  pageSize={pageSize}
+                  toolbarProps={toolbarProps}
+                  mode="fullscreen"
                 />
               </div>
             </div>
           </DialogContent>
         </Dialog>
       </div>
-      {toolbar ? <div className="mb-4">{toolbar}</div> : null}
 
-      <MatrixTable
+      <AnnualBillsMatrixContent
+        tabs={tabs}
+        activeTab={activeTab}
         rows={rows}
+        totalItems={totalItems}
         currentSearchParams={currentSearchParams}
         year={year}
-        stickyCellClassName="bg-white"
-        containerClassName="overflow-x-auto"
+        page={page}
+        pageSize={pageSize}
+        toolbarProps={toolbarProps}
+        mode="embedded"
       />
+    </div>
+  );
+}
+
+function AnnualBillsMatrixContent({
+  tabs,
+  activeTab,
+  rows,
+  totalItems,
+  currentSearchParams,
+  year,
+  page,
+  pageSize,
+  toolbarProps,
+  mode,
+}: {
+  tabs: AnnualBillsRegionTab[];
+  activeTab: AnnualBillsRegionTab;
+  rows: AnnualBillsMatrixRow[];
+  totalItems: number;
+  currentSearchParams: Record<string, QueryValue>;
+  year: number;
+  page: number;
+  pageSize: number;
+  toolbarProps: Omit<AnnualBillsToolbarProps, "mode">;
+  mode: "embedded" | "fullscreen";
+}) {
+  return (
+    <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
+      <AnnualBillsToolbar {...toolbarProps} mode={mode} />
+
+      <Tabs value={activeTab.key} className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+        <TabsList className="h-auto flex-wrap justify-start gap-2 rounded-2xl bg-slate-100 p-2">
+          {tabs.map((tab) => {
+            const href = `${PATHNAME}${buildQueryString(currentSearchParams, {
+              tabRegion: tab.key === "all" ? undefined : tab.key,
+              page: undefined,
+            })}`;
+
+            return (
+              <TabsTrigger key={tab.key} value={tab.key} asChild className="px-3 py-2">
+                <Link href={href} scroll={false}>
+                  <span>{tab.label}</span>
+                  <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-700">
+                    {tab.totalHouseholds}
+                  </span>
+                </Link>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+
+        <TabsContent value={activeTab.key} className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+          <div className={mode === "fullscreen" ? "min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto" : "overflow-x-auto"}>
+            {rows.length === 0 ? (
+              <TableEmptyState
+                icon={ScrollText}
+                title={`Belum ada keluarga pada tab ${activeTab.label}`}
+                description="Coba ubah pencarian, filter, atau pilih wilayah lain."
+              />
+            ) : (
+              <MatrixTable
+                rows={rows}
+                currentSearchParams={currentSearchParams}
+                year={year}
+                stickyCellClassName="bg-white"
+                containerClassName={mode === "fullscreen" ? "h-full min-w-max overflow-visible" : "overflow-x-auto"}
+              />
+            )}
+          </div>
+
+          <TablePagination
+            pathname={PATHNAME}
+            searchParams={currentSearchParams}
+            totalItems={totalItems}
+            page={page}
+            pageSize={pageSize}
+            itemLabel="keluarga"
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -188,7 +297,7 @@ function EmptyMatrixCell({
   month: number;
   currentSearchParams: Record<string, QueryValue>;
 }) {
-  const redirectTo = `/iuran/tagihan${buildQueryString(currentSearchParams, {})}`;
+  const redirectTo = `${PATHNAME}${buildQueryString(currentSearchParams, {})}`;
 
   return (
     <div className="flex min-h-[112px] flex-col rounded-xl border border-dashed border-slate-200 bg-slate-50/40 px-2 py-2.5 text-center">
@@ -218,7 +327,7 @@ function MatrixCell({
 
   const showPayAction =
     cell.status === "BELUM_BAYAR" || cell.status === "SEBAGIAN";
-  const redirectTo = `/iuran/tagihan${buildQueryString(currentSearchParams, {})}`;
+  const redirectTo = `${PATHNAME}${buildQueryString(currentSearchParams, {})}`;
 
   return (
     <div className="relative flex min-h-[112px] flex-col rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-center transition-colors hover:border-slate-300 hover:bg-slate-50/40">

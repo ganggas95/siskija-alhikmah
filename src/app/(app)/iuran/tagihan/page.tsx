@@ -2,7 +2,6 @@ import { BillStatus, PermissionKey } from "@prisma/client";
 import { ScrollText } from "lucide-react";
 
 import { PageHeader } from "@/components/app/page-header";
-import { TablePagination } from "@/components/table/table-pagination";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
 import {
@@ -15,7 +14,6 @@ import { getContributionFeeConfig } from "@/modules/contributions/services/contr
 import { getAnnualBillsMatrix } from "@/modules/contributions/queries/get-annual-bills-matrix";
 import { AnnualBillsMatrix } from "./_components/annual-bills-matrix";
 import { AnnualBillsSummary } from "./_components/annual-bills-summary";
-import { AnnualBillsToolbar } from "./_components/annual-bills-toolbar";
 
 export default async function ContributionBillsPage({
   searchParams,
@@ -27,6 +25,7 @@ export default async function ContributionBillsPage({
   const resolvedSearchParams = await resolveSearchParams(searchParams);
   const query = getQueryParam(resolvedSearchParams, "q");
   const regionIdFilter = getQueryParam(resolvedSearchParams, "regionId");
+  const tabRegion = getQueryParam(resolvedSearchParams, "tabRegion");
   const statusFilter = getQueryParam(resolvedSearchParams, "status");
   const yearFilter = getQueryParam(resolvedSearchParams, "year");
   const { page, pageSize } = getPaginationState(resolvedSearchParams, 20);
@@ -44,6 +43,7 @@ export default async function ContributionBillsPage({
       year,
       query: query || undefined,
       regionId: regionIdFilter || undefined,
+      tabRegion: tabRegion || undefined,
       status:
         statusFilter && statusFilter !== "all"
           ? (statusFilter as BillStatus)
@@ -64,33 +64,26 @@ export default async function ContributionBillsPage({
       <AnnualBillsSummary summary={matrix.summary} />
 
       <AnnualBillsMatrix
-        rows={matrix.rows}
+        tabs={matrix.tabs}
+        activeTab={matrix.activeTab}
+        rows={matrix.rowsForActiveTab}
+        totalItems={matrix.totalHouseholdsForActiveTab}
         currentSearchParams={resolvedSearchParams}
         year={year}
-        toolbar={
-          <AnnualBillsToolbar
-            query={query}
-            year={year}
-            regionId={regionIdFilter}
-            status={statusFilter}
-            regions={regions}
-            currentSearchParams={resolvedSearchParams}
-            normalAmount={fees.normal.toString()}
-            specialAmount={fees.special.toString()}
-          />
-        }
+        page={matrix.safePage}
+        pageSize={pageSize}
+        toolbarProps={{
+          query,
+          year,
+          regionId: regionIdFilter,
+          tabRegion,
+          status: statusFilter,
+          regions,
+          currentSearchParams: resolvedSearchParams,
+          normalAmount: fees.normal.toString(),
+          specialAmount: fees.special.toString(),
+        }}
       />
-
-      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <TablePagination
-          pathname="/iuran/tagihan"
-          searchParams={resolvedSearchParams}
-          totalItems={matrix.totalHouseholds}
-          page={page}
-          pageSize={pageSize}
-          itemLabel="keluarga"
-        />
-      </div>
     </section>
   );
 }
