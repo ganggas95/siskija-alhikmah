@@ -20,7 +20,7 @@ export function mapContributionExportRows(
     id: string;
     code: string;
     headName: string;
-    region: { name: string } | null;
+    region: { id: string; name: string } | null;
   }>,
   bills: Array<{
     id: string;
@@ -51,7 +51,7 @@ export async function getContributionPaymentExportRows(
       id: true,
       code: true,
       headName: true,
-      region: { select: { name: true } },
+      region: { select: { id: true, name: true } },
     },
   });
 

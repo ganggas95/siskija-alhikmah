@@ -35,8 +35,27 @@ export type AnnualBillsMatrixRow = {
   householdId: string;
   code: string;
   name: string;
+  regionId: string | null;
   regionName: string | null;
   months: Array<AnnualBillCell | null>;
+};
+
+export const ALL_REGION_TAB_KEY = "all";
+export const UNASSIGNED_REGION_TAB_KEY = "__unassigned__";
+
+export type AnnualBillsRegionTab = {
+  key: string;
+  label: string;
+  totalHouseholds: number;
+  regionId: string | null;
+};
+
+export type AnnualBillsRegionMatrixView = {
+  tabs: AnnualBillsRegionTab[];
+  activeTab: AnnualBillsRegionTab;
+  rowsForActiveTab: AnnualBillsMatrixRow[];
+  totalHouseholdsForActiveTab: number;
+  safePage: number;
 };
 
 export type AnnualBillRecord = {
@@ -63,7 +82,7 @@ export type AnnualHouseholdRecord = {
   id: string;
   code: string;
   headName: string;
-  region: { name: string } | null;
+  region: { id: string; name: string } | null;
 };
 
 export type AnnualBillsSummary = {
@@ -168,10 +187,87 @@ export function buildAnnualBillsMatrixRows(input: {
       householdId: household.id,
       code: household.code,
       name: household.headName,
+      regionId: household.region?.id ?? null,
       regionName: household.region?.name ?? null,
       months,
     };
   });
+}
+
+export function getAnnualBillsRegionLabel(regionName: string | null) {
+  return regionName?.trim() || "Tanpa Wilayah";
+}
+
+function getAnnualBillsRegionKey(row: AnnualBillsMatrixRow) {
+  return row.regionId ?? UNASSIGNED_REGION_TAB_KEY;
+}
+
+export function groupAnnualBillsRowsByRegion(rows: AnnualBillsMatrixRow[]) {
+  const grouped = new Map<string, AnnualBillsMatrixRow[]>();
+
+  for (const row of rows) {
+    const key = getAnnualBillsRegionKey(row);
+    const items = grouped.get(key) ?? [];
+    items.push(row);
+    grouped.set(key, items);
+  }
+
+  return grouped;
+}
+
+export function buildAnnualBillsRegionTabs(rows: AnnualBillsMatrixRow[]) {
+  const tabs = Array.from(groupAnnualBillsRowsByRegion(rows).entries())
+    .map(([key, items]) => ({
+      key,
+      label: getAnnualBillsRegionLabel(items[0]?.regionName ?? null),
+      totalHouseholds: items.length,
+      regionId: items[0]?.regionId ?? null,
+    }))
+    .sort((left, right) => left.label.localeCompare(right.label, "id"));
+
+  return [
+    {
+      key: ALL_REGION_TAB_KEY,
+      label: "Semua Wilayah",
+      totalHouseholds: rows.length,
+      regionId: null,
+    },
+    ...tabs,
+  ] satisfies AnnualBillsRegionTab[];
+}
+
+export function buildAnnualBillsRegionMatrixView(input: {
+  rows: AnnualBillsMatrixRow[];
+  activeTabKey?: string;
+  page?: number;
+  take?: number;
+}): AnnualBillsRegionMatrixView {
+  const tabs = buildAnnualBillsRegionTabs(input.rows);
+  const groupedRows = groupAnnualBillsRowsByRegion(input.rows);
+  const activeTab =
+    tabs.find((tab) => tab.key === input.activeTabKey) ?? tabs[0] ?? {
+      key: ALL_REGION_TAB_KEY,
+      label: "Semua Wilayah",
+      totalHouseholds: 0,
+      regionId: null,
+    };
+  const activeRows =
+    activeTab.key === ALL_REGION_TAB_KEY
+      ? input.rows
+      : (groupedRows.get(activeTab.key) ?? []);
+  const totalHouseholdsForActiveTab = activeRows.length;
+  const take = Math.max(input.take ?? 25, 1);
+  const totalPages = Math.max(1, Math.ceil(totalHouseholdsForActiveTab / take));
+  const safePage = Math.min(Math.max(input.page ?? 1, 1), totalPages);
+  const start = (safePage - 1) * take;
+
+  return {
+    tabs,
+    activeTab,
+    rowsForActiveTab: activeRows.slice(start, start + take),
+    totalHouseholdsForActiveTab,
+    safePage,
+  };
 }
 
 export function buildAnnualBillsSummary(input: {

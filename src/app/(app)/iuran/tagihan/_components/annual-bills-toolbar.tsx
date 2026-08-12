@@ -28,48 +28,58 @@ const statusOptions = [
   { value: BillStatus.DIBATALKAN, label: "Ada Dibatalkan" },
 ] as const;
 
-export function AnnualBillsToolbar({
-  query,
-  year,
-  regionId,
-  status,
-  regions,
-  currentSearchParams,
-  normalAmount,
-  specialAmount,
-}: {
+export type AnnualBillsToolbarProps = {
   query: string;
   year: number;
   regionId: string;
+  tabRegion: string;
   status: string;
   regions: Array<{ id: string; name: string }>;
   currentSearchParams: Record<string, QueryValue>;
   normalAmount: string;
   specialAmount: string;
-}) {
+  mode?: "embedded" | "fullscreen";
+};
+
+export function AnnualBillsToolbar({
+  query,
+  year,
+  regionId,
+  tabRegion,
+  status,
+  regions,
+  currentSearchParams,
+  normalAmount,
+  specialAmount,
+  mode = "embedded",
+}: AnnualBillsToolbarProps) {
   const resetHref = `/iuran/tagihan${buildQueryString(currentSearchParams, {
     q: undefined,
     regionId: undefined,
     status: undefined,
     page: undefined,
+    tabRegion: tabRegion || undefined,
     year,
   })}`;
   const hasActiveFilter = Boolean(query || (regionId && regionId !== "all") || (status && status !== "all"));
   const generateRedirectTo = `/iuran/tagihan${buildQueryString(currentSearchParams, {
     q: query || undefined,
     regionId: regionId || undefined,
+    tabRegion: tabRegion || undefined,
     status: status || undefined,
     page: undefined,
     year,
   })}`;
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className={mode === "fullscreen" ? "flex flex-wrap items-center gap-3 pb-1" : "flex flex-wrap items-center gap-3"}>
       <TableFilterModal
         title="Filter Matriks Tahunan"
         description="Cari keluarga, pilih wilayah, dan fokus pada household yang punya status tertentu."
         activeCount={hasActiveFilter ? 1 : 0}
       >
+        <input type="hidden" name="tabRegion" value={tabRegion || ""} />
+
         <label className="space-y-2">
           <span className="text-sm font-medium text-slate-700">Cari jamaah</span>
           <input

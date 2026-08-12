@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import {
   buildAnnualBillsSummary,
   buildAnnualBillsMatrixRows,
+  buildAnnualBillsRegionMatrixView,
   type AnnualBillDraftPaymentRecord,
   type AnnualBillsSummary,
   type AnnualBillPaymentTotalRecord,
@@ -18,6 +19,7 @@ export type AnnualBillsMatrixInput = {
   year: number;
   query?: string;
   regionId?: string;
+  tabRegion?: string;
   status?: BillStatus | "all";
   page?: number;
   take?: number;
@@ -63,7 +65,7 @@ export function buildAnnualBillsMatrixResult(input: {
     id: string;
     code: string;
     headName: string;
-    region: { name: string } | null;
+    region: { id: string; name: string } | null;
   }>;
   totalHouseholds: number;
   bills: Array<{
@@ -77,6 +79,9 @@ export function buildAnnualBillsMatrixResult(input: {
   paymentTotals: AnnualBillPaymentTotalRecord[];
   draftPayments?: AnnualBillDraftPaymentRecord[];
   summary?: AnnualBillsSummary;
+  activeTabRegion?: string;
+  page?: number;
+  take?: number;
 }) {
   const rows = buildAnnualBillsMatrixRows({
     households: input.households,
@@ -84,10 +89,21 @@ export function buildAnnualBillsMatrixResult(input: {
     paymentTotals: input.paymentTotals,
     draftPayments: input.draftPayments,
   });
+  const regionView = buildAnnualBillsRegionMatrixView({
+    rows,
+    activeTabKey: input.activeTabRegion,
+    page: input.page,
+    take: input.take,
+  });
 
   return {
     rows,
     totalHouseholds: input.totalHouseholds,
+    tabs: regionView.tabs,
+    activeTab: regionView.activeTab,
+    rowsForActiveTab: regionView.rowsForActiveTab,
+    totalHouseholdsForActiveTab: regionView.totalHouseholdsForActiveTab,
+    safePage: regionView.safePage,
     summary:
       input.summary ??
       buildAnnualBillsSummary({
@@ -100,24 +116,21 @@ export function buildAnnualBillsMatrixResult(input: {
 
 export async function getAnnualBillsMatrix(input: AnnualBillsMatrixInput) {
   const householdWhere = buildAnnualBillsHouseholdWhere(input);
-  const skip = Math.max((input.page ?? 1) - 1, 0) * (input.take ?? 25);
-  const take = input.take ?? 25;
 
-  const [households, totalHouseholds] = await Promise.all([
-    db.household.findMany({
-      where: householdWhere,
-      select: {
-        id: true,
-        code: true,
-        headName: true,
-        region: { select: { name: true } },
-      },
-      orderBy: { code: "asc" },
-      skip,
-      take,
-    }),
-    db.household.count({ where: householdWhere }),
-  ]);
+  const households = await db.household.findMany({
+    where: householdWhere,
+    select: {
+      id: true,
+      code: true,
+      headName: true,
+      region: { select: { id: true, name: true } },
+    },
+    orderBy: [
+      { region: { name: "asc" } },
+      { code: "asc" },
+    ],
+  });
+  const totalHouseholds = households.length;
   const householdIds = households.map((household) => household.id);
 
   const [
@@ -150,17 +163,10 @@ export async function getAnnualBillsMatrix(input: AnnualBillsMatrixInput) {
       ? db.contributionPayment.groupBy({
           by: ["billId"],
           where: {
-            billId: {
-              in: (
-                await db.contributionBill.findMany({
-                  where: {
-                    canceledAt: null,
-                    year: input.year,
-                    householdId: { in: householdIds },
-                  },
-                  select: { id: true },
-                })
-              ).map((bill) => bill.id),
+            bill: {
+              canceledAt: null,
+              year: input.year,
+              householdId: { in: householdIds },
             },
             canceledAt: null,
             status: ContributionPaymentStatus.VERIFIED,
@@ -270,5 +276,8 @@ export async function getAnnualBillsMatrix(input: AnnualBillsMatrixInput) {
     })),
     draftPayments,
     summary,
+    activeTabRegion: input.tabRegion,
+    page: input.page,
+    take: input.take,
   });
 }
