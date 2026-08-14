@@ -1,5 +1,7 @@
-import Link from "next/link";
+"use client";
+
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +10,7 @@ import {
   getTotalPages,
   type QueryValue,
 } from "@/lib/table-query";
+import { useTableLoadingState } from "@/components/table/table-loading-state";
 
 type TablePaginationProps = {
   pathname: string;
@@ -76,6 +79,9 @@ function PaginationLink({
   disabled: boolean;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const tableLoading = useTableLoadingState();
+
   if (disabled) {
     return (
       <Button type="button" variant="outline" disabled className="gap-2">
@@ -87,8 +93,16 @@ function PaginationLink({
   const href = `${pathname}${buildQueryString(searchParams, { page: targetPage })}`;
 
   return (
-    <Button asChild variant="outline" className="gap-2">
-      <Link href={href}>{children}</Link>
+    <Button
+      type="button"
+      variant="outline"
+      className="gap-2"
+      onClick={() => {
+        tableLoading?.startLoading(href);
+        router.push(href, { scroll: false });
+      }}
+    >
+      {children}
     </Button>
   );
 }

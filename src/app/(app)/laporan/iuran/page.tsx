@@ -7,6 +7,12 @@ import { PageHeader } from "@/components/app/page-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { TableEmptyState } from "@/components/table/empty-state";
+import {
+  TableLoadingForm,
+  TableLoadingLink,
+  TableLoadingState,
+  TableLoadingSubmitButton,
+} from "@/components/table/table-loading-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
@@ -99,13 +105,13 @@ export default async function ContributionReportPage({
         <Card label="Tagihan Lunas" value={String(paidBills)} />
         <Card label="Total Nominal Tagihan" value={formatRupiah(totalDue)} />
       </div>
-      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <TableLoadingState className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <div className="mb-4 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-slate-900">Rincian Laporan Iuran</h3>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <form className="grid flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <TableLoadingForm className="grid flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
               <input
                 name="q"
                 defaultValue={query}
@@ -116,10 +122,10 @@ export default async function ContributionReportPage({
               {statusFilter ? <input type="hidden" name="status" value={statusFilter} /> : null}
               {yearFilter ? <input type="hidden" name="year" value={yearFilter} /> : null}
               {monthFilter ? <input type="hidden" name="month" value={monthFilter} /> : null}
-              <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+              <TableLoadingSubmitButton className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white" pendingLabel="Mencari...">
                   <ActionLabel action="search">Cari</ActionLabel>
-              </button>
-            </form>
+              </TableLoadingSubmitButton>
+            </TableLoadingForm>
             <div className="flex gap-3">
               <TableFilterModal
                 title="Filter Laporan Iuran"
@@ -182,9 +188,9 @@ export default async function ContributionReportPage({
                   </div>
                 </div>
               </TableFilterModal>
-              <Link href="/laporan/iuran" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
+              <TableLoadingLink href="/laporan/iuran" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
                   <ActionLabel action="reset">Reset</ActionLabel>
-              </Link>
+              </TableLoadingLink>
             </div>
           </div>
         </div>
@@ -234,7 +240,7 @@ export default async function ContributionReportPage({
           pageSize={pageSize}
           itemLabel="tagihan"
         />
-      </div>
+      </TableLoadingState>
     </section>
   );
 }

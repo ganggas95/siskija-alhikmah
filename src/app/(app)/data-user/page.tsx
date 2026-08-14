@@ -8,6 +8,12 @@ import { SortableHeader } from "@/components/table/sortable-header";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { TableEmptyState } from "@/components/table/empty-state";
+import {
+  TableLoadingForm,
+  TableLoadingLink,
+  TableLoadingState,
+  TableLoadingSubmitButton,
+} from "@/components/table/table-loading-state";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac";
 import { parseSortParam, type SortState } from "@/lib/table-sort";
@@ -104,7 +110,7 @@ export default async function UserPage({
         description="Kelola akun pengguna internal yang dapat mengakses sistem."
         icon={ShieldUser}
       />
-      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <TableLoadingState className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <div className="mb-4 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-slate-900">Daftar User</h3>
@@ -115,14 +121,14 @@ export default async function UserPage({
               >
                 <ActionLabel action="add">Tambah User</ActionLabel>
               </Link>
-              <Link href="/data-user" className="text-sm font-medium text-green-800">
+              <TableLoadingLink href="/data-user" className="text-sm font-medium text-green-800">
                 <ActionLabel action="reset">Reset</ActionLabel>
-              </Link>
+              </TableLoadingLink>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <form className="grid gap-3 md:w-full md:max-w-xl md:grid-cols-[minmax(0,1fr)_auto]">
+            <TableLoadingForm className="grid gap-3 md:w-full md:max-w-xl md:grid-cols-[minmax(0,1fr)_auto]">
               <input type="hidden" name="role" value={role} />
               <input type="hidden" name="status" value={status} />
               <input
@@ -131,10 +137,10 @@ export default async function UserPage({
                 placeholder="Cari nama, email, atau role"
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
               />
-              <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+              <TableLoadingSubmitButton className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white" pendingLabel="Mencari...">
                 <ActionLabel action="search">Cari</ActionLabel>
-              </button>
-            </form>
+              </TableLoadingSubmitButton>
+            </TableLoadingForm>
             <TableFilterModal
               title="Filter Data User"
               description="Saring data user berdasarkan role dan status akun."
@@ -247,7 +253,7 @@ export default async function UserPage({
           pageSize={pageSize}
           itemLabel="user"
         />
-      </div>
+      </TableLoadingState>
     </section>
   );
 }

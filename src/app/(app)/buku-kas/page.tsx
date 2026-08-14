@@ -9,6 +9,12 @@ import { ResponsiveInlineGrid } from "@/components/layout/responsive-inline-grid
 import { SortableHeader } from "@/components/table/sortable-header";
 import { TablePagination } from "@/components/table/table-pagination";
 import { TableEmptyState } from "@/components/table/empty-state";
+import {
+  TableLoadingForm,
+  TableLoadingLink,
+  TableLoadingState,
+  TableLoadingSubmitButton,
+} from "@/components/table/table-loading-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
@@ -82,15 +88,15 @@ export default async function LedgerPage({
         description="Ledger aktif menjadi source of truth untuk saldo kas masjid."
         icon={BookOpenText}
       />
-      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <TableLoadingState className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <div className="mb-4 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-slate-900">Daftar Ledger</h3>
-            <Link href="/buku-kas" className="text-sm font-medium text-green-800">
+            <TableLoadingLink href="/buku-kas" className="text-sm font-medium text-green-800">
               <ActionLabel action="reset">Reset</ActionLabel>
-            </Link>
+            </TableLoadingLink>
           </div>
-          <ResponsiveInlineGrid as="form">
+          <ResponsiveInlineGrid as={TableLoadingForm}>
             <input
               name="q"
               defaultValue={query}
@@ -109,9 +115,9 @@ export default async function LedgerPage({
                 </option>
               ))}
             </select>
-            <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+            <TableLoadingSubmitButton className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white" pendingLabel="Memuat...">
               <ActionLabel action="search">Terapkan</ActionLabel>
-            </button>
+            </TableLoadingSubmitButton>
           </ResponsiveInlineGrid>
         </div>
         <div className="space-y-3 md:hidden">
@@ -211,7 +217,7 @@ export default async function LedgerPage({
           pageSize={pageSize}
           itemLabel="entry ledger"
         />
-      </div>
+      </TableLoadingState>
     </section>
   );
 }

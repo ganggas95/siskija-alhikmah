@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useRef, useState } from "react";
 import { useAsyncRequest } from "@/components/app/request-state";
+import { LoadingButton } from "@/components/form/loading-button";
 import { ActionLabel } from "@/components/ui/action-label";
 import { Progress } from "@/components/ui/progress";
 
@@ -98,7 +99,7 @@ function delay(ms: number) {
 export function ImportContributionForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { execute: executeRequest } = useAsyncRequest<Response>();
+  const { execute: executeRequest, isLoading } = useAsyncRequest<Response>();
   const [state, setState] = useState<ImportState>(initialState);
 
   function applySnapshot(snapshot: ImportSnapshot) {
@@ -331,6 +332,7 @@ export function ImportContributionForm() {
         ref={formRef}
         onSubmit={handleSubmit}
         className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+        aria-busy={state.running || state.polling || isLoading}
       >
         <div className="space-y-5">
           <div>
@@ -348,6 +350,7 @@ export function ImportContributionForm() {
                 type="number"
                 defaultValue={new Date().getFullYear()}
                 min={2000}
+                disabled={state.running || state.polling || isLoading}
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
                 required
               />
@@ -372,6 +375,7 @@ export function ImportContributionForm() {
                 name="file"
                 type="file"
                 accept=".xlsx"
+                disabled={state.running || state.polling || isLoading}
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
                 required
               />
@@ -383,15 +387,15 @@ export function ImportContributionForm() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
+            <LoadingButton
               type="submit"
-              disabled={state.running}
+              loading={state.running || state.polling || isLoading}
+              disabled={state.running || state.polling || isLoading}
+              loadingLabel={state.polling ? "Memproses via polling..." : "Memproses..."}
               className="inline-flex items-center gap-2 rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
-              <ActionLabel action="import">
-                {state.running ? (state.polling ? "Memproses via polling..." : "Memproses...") : "Mulai Import"}
-              </ActionLabel>
-            </button>
+              <ActionLabel action="import">Mulai Import</ActionLabel>
+            </LoadingButton>
             <p className="text-sm text-slate-600">{state.message}</p>
           </div>
 

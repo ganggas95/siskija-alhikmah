@@ -10,6 +10,12 @@ import { ActionLabel } from "@/components/ui/action-label";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
 import { TablePagination } from "@/components/table/table-pagination";
 import { TableEmptyState } from "@/components/table/empty-state";
+import {
+  TableLoadingForm,
+  TableLoadingLink,
+  TableLoadingState,
+  TableLoadingSubmitButton,
+} from "@/components/table/table-loading-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requirePermission } from "@/lib/rbac";
@@ -100,7 +106,7 @@ export default async function ExpensePage({
         description="Catat pengeluaran dan verifikasi sebelum saldo berkurang."
         icon={ArrowUpCircle}
       />
-      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <TableLoadingState className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
               <h3 className="text-lg font-semibold text-slate-900">Transaksi Pengeluaran</h3>
@@ -112,7 +118,7 @@ export default async function ExpensePage({
               </Link>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <form className="grid flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <TableLoadingForm className="grid flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                 <input
                   name="q"
                   defaultValue={query}
@@ -122,10 +128,10 @@ export default async function ExpensePage({
                 {categoryIdFilter ? <input type="hidden" name="categoryId" value={categoryIdFilter} /> : null}
                 {statusFilter ? <input type="hidden" name="status" value={statusFilter} /> : null}
                 {methodFilter ? <input type="hidden" name="method" value={methodFilter} /> : null}
-                <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+                <TableLoadingSubmitButton className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white" pendingLabel="Mencari...">
                   <ActionLabel action="search">Cari</ActionLabel>
-                </button>
-              </form>
+                </TableLoadingSubmitButton>
+              </TableLoadingForm>
               <div className="flex gap-3">
                 <TableFilterModal
                   title="Filter Kas Keluar"
@@ -179,9 +185,9 @@ export default async function ExpensePage({
                     </select>
                   </div>
                 </TableFilterModal>
-                <Link href="/kas-keluar" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
+                <TableLoadingLink href="/kas-keluar" className="inline-flex items-center rounded-xl px-3 py-3 text-sm font-medium text-green-800">
                   <ActionLabel action="reset">Reset</ActionLabel>
-                </Link>
+                </TableLoadingLink>
               </div>
             </div>
           </div>
@@ -352,7 +358,7 @@ export default async function ExpensePage({
             pageSize={pageSize}
             itemLabel="transaksi"
           />
-      </div>
+      </TableLoadingState>
     </section>
   );
 }
