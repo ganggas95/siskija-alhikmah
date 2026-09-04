@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 
 import { SubmitButton } from "@/components/form/submit-button";
 import { ActionLabel } from "@/components/ui/action-label";
+import type { ActionResult } from "@/lib/action-result";
 
-type ServerAction = (formData: FormData) => Promise<{ success: boolean }>;
+type ServerAction = (formData: FormData) => Promise<ActionResult>;
 
 type DeleteWithConfirmFormProps = {
   action: ServerAction;
@@ -28,9 +29,13 @@ export function DeleteWithConfirmForm({
   redirectTo,
   children,
 }: DeleteWithConfirmFormProps) {
+  const handleAction = async (formData: FormData) => {
+    await action(formData);
+  };
+
   return (
     <form
-      action={action}
+      action={handleAction}
       onSubmit={(e) => {
         if (!window.confirm(confirmMessage)) {
           e.preventDefault();
@@ -42,10 +47,7 @@ export function DeleteWithConfirmForm({
         <input type="hidden" name="redirectTo" value={redirectTo} />
       ) : null}
       {children ?? (
-        <SubmitButton
-          pendingLabel={pendingLabel}
-          className={buttonClassName}
-        >
+        <SubmitButton pendingLabel={pendingLabel} className={buttonClassName}>
           <ActionLabel action="delete">{buttonLabel}</ActionLabel>
         </SubmitButton>
       )}
