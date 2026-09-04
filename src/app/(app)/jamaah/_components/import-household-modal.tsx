@@ -15,7 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { useAsyncRequest } from "@/components/app/request-state";
+import { LoadingButton } from "@/components/form/loading-button";
 import { ActionLabel } from "@/components/ui/action-label";
+import { Button } from "@/components/ui/button";
 
 type RegionOption = {
   id: string;
@@ -55,6 +57,7 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
   const [open, setOpen] = useState(initialState.open);
   const [regionId, setRegionId] = useState("");
   const [state, setState] = useState(initialState);
+  const [templateLoading, setTemplateLoading] = useState(false);
 
   function reset() {
     setRegionId("");
@@ -120,6 +123,7 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
 
   async function handleTemplateDownload(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
+    setTemplateLoading(true);
 
     try {
       const response = await executeRequest(() => fetch("/api/jamaah/import-template"));
@@ -141,6 +145,8 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
         ...current,
         message: error instanceof Error ? error.message : "Template import gagal diunduh.",
       }));
+    } finally {
+      setTemplateLoading(false);
     }
   }
 
@@ -156,12 +162,12 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
       }}
     >
       <DialogTrigger asChild>
-        <button
+        <Button
           type="button"
           className="rounded-xl border border-green-700 bg-white px-4 py-3 text-sm font-semibold text-green-800"
         >
           <ActionLabel action="import">Import Jamaah</ActionLabel>
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -208,16 +214,16 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
             />
           </div>
 
-          <button
+          <LoadingButton
             type="button"
             onClick={handleTemplateDownload}
+            loading={templateLoading}
             disabled={state.importing || isLoading}
+            loadingLabel="Mengunduh..."
             className="inline-flex text-sm font-medium text-green-800 underline disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <ActionLabel action="template">
-              {state.importing ? "Mengimport..." : isLoading ? "Mengunduh..." : "Download Template Import"}
-            </ActionLabel>
-          </button>
+            <ActionLabel action="template">Download Template Import</ActionLabel>
+          </LoadingButton>
 
           {state.message ? (
             <div className={`rounded-2xl px-4 py-3 text-sm ${state.summary ? "bg-green-50 text-green-900" : "bg-amber-50 text-amber-900"}`}>
@@ -251,24 +257,24 @@ export function ImportHouseholdModal({ regions }: ImportHouseholdModalProps) {
 
           <DialogFooter>
             <DialogClose asChild>
-              <button
+              <Button
                 type="button"
                 onClick={close}
                 disabled={state.importing || isLoading}
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ActionLabel action="cancel">Batal</ActionLabel>
-              </button>
+              </Button>
             </DialogClose>
-            <button
+            <LoadingButton
               type="submit"
+              loading={state.importing || isLoading}
               disabled={state.importing || isLoading}
+              loadingLabel="Mengimport..."
               className="rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <ActionLabel action="import">
-                {state.importing ? "Mengimport..." : "Import"}
-              </ActionLabel>
-            </button>
+              <ActionLabel action="import">Import</ActionLabel>
+            </LoadingButton>
           </DialogFooter>
         </form>
       </DialogContent>

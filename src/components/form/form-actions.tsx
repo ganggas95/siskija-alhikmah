@@ -4,6 +4,7 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 
 import { SubmitButton } from "@/components/form/submit-button";
+import { buttonVariants } from "@/components/ui/button";
 import { ActionLabel } from "@/components/ui/action-label";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +26,13 @@ export function FormActions({
         tabIndex={pending ? -1 : 0}
         aria-disabled={pending}
         className={cn(
-          "inline-flex h-11 items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground",
+          buttonVariants({ variant: "outline" }),
+          "px-4 py-2",
           pending && "pointer-events-none opacity-50",
         )}
       >
         <ActionLabel action="cancel">Batalkan</ActionLabel>
-        </Link>
+      </Link>
       <SubmitButton pendingLabel="Menyimpan..." className="w-full sm:w-auto">
         <ActionLabel action="submit">{submitLabel}</ActionLabel>
       </SubmitButton>

@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { TableFilterModal } from "@/components/table/table-filter-modal";
+import { TableLoadingLink } from "@/components/table/table-loading-state";
 import { ActionLabel } from "@/components/ui/action-label";
 import type { QueryValue } from "@/lib/table-query";
 import { buildQueryString } from "@/lib/table-query";
@@ -158,12 +159,12 @@ export function AnnualBillsToolbar({
       </Dialog>
 
       {hasActiveFilter ? (
-        <Link
+        <TableLoadingLink
           href={resetHref}
           className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
         >
           <ActionLabel action="reset">Reset Filter</ActionLabel>
-        </Link>
+        </TableLoadingLink>
       ) : null}
 
       <div className="hidden items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs text-slate-600 sm:inline-flex">

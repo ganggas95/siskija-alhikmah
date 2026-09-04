@@ -23,6 +23,12 @@ import { PageHeader } from "@/components/app/page-header";
 import { ResponsiveInlineGrid } from "@/components/layout/responsive-inline-grid";
 import { TablePagination } from "@/components/table/table-pagination";
 import { TableEmptyState } from "@/components/table/empty-state";
+import {
+  TableLoadingForm,
+  TableLoadingLink,
+  TableLoadingState,
+  TableLoadingSubmitButton,
+} from "@/components/table/table-loading-state";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { requireSession } from "@/lib/rbac";
@@ -243,7 +249,7 @@ export default async function DashboardPage({
           </article>
         ))}
       </div>
-      <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <TableLoadingState className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <div className="mb-4 flex flex-col gap-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -259,14 +265,14 @@ export default async function DashboardPage({
                 </p>
               </div>
             </div>
-            <Link
+            <TableLoadingLink
               href="/dashboard"
               className="text-sm font-medium text-green-800"
             >
               <ActionLabel action="reset">Reset</ActionLabel>
-            </Link>
+            </TableLoadingLink>
           </div>
-          <ResponsiveInlineGrid as="form">
+          <ResponsiveInlineGrid as={TableLoadingForm}>
             <input
               name="q"
               defaultValue={query}
@@ -285,9 +291,9 @@ export default async function DashboardPage({
                 </option>
               ))}
             </select>
-            <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+            <TableLoadingSubmitButton className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white" pendingLabel="Memuat...">
               <ActionLabel action="search">Terapkan</ActionLabel>
-            </button>
+            </TableLoadingSubmitButton>
           </ResponsiveInlineGrid>
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-500">
@@ -411,7 +417,7 @@ export default async function DashboardPage({
           pageSize={pageSize}
           itemLabel="transaksi"
         />
-      </section>
+      </TableLoadingState>
     </section>
   );
 }

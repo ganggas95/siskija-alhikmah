@@ -2,7 +2,9 @@
 
 import { type SortState } from "@/lib/table-sort";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { useTableLoadingState } from "@/components/table/table-loading-state";
 
 interface SortableHeaderProps {
   column: string;
@@ -19,6 +21,8 @@ export function SortableHeader({
   baseHref,
   currentSearchParams,
 }: SortableHeaderProps) {
+  const router = useRouter();
+  const tableLoading = useTableLoadingState();
   const isActive = sort.column === column;
   const nextDirection = isActive && sort.direction === "asc" ? "desc" : "asc";
 
@@ -52,11 +56,15 @@ export function SortableHeader({
     : ArrowUpDown;
 
   return (
-    <Link
-      href={href}
+    <button
+      type="button"
       className={`group inline-flex items-center gap-1.5 whitespace-nowrap transition-colors hover:text-green-800 ${
         isActive ? "font-semibold text-green-800" : "text-slate-600"
       }`}
+      onClick={() => {
+        tableLoading?.startLoading(href);
+        router.push(href, { scroll: false });
+      }}
     >
       {label}
       <Icon
@@ -66,6 +74,6 @@ export function SortableHeader({
             : "text-slate-400 group-hover:text-slate-600"
         }`}
       />
-    </Link>
+    </button>
   );
 }

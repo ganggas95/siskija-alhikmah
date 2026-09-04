@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { LoadingIndicator } from "@/components/app/loading-indicator";
 import { Button, type ButtonProps } from "@/components/ui/button";
 
 type LoadingButtonProps = Omit<ButtonProps, "children"> & {
@@ -23,7 +24,7 @@ export function LoadingButton({
       disabled={disabled || loading}
       aria-busy={loading}
     >
-      {loading ? loadingLabel : children}
+      {loading ? <LoadingIndicator label={loadingLabel} /> : children}
     </Button>
   );
 }

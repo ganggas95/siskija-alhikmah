@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
+import { LoadingIndicator } from "@/components/app/loading-indicator";
 import { Button, type ButtonProps } from "@/components/ui/button";
 
 type SubmitButtonProps = Omit<ButtonProps, "type" | "children"> & {
@@ -28,7 +29,7 @@ export function SubmitButton({
       disabled={disabled || pending}
       aria-busy={pending}
     >
-      {pending ? pendingLabel : children}
+      {pending ? <LoadingIndicator label={pendingLabel} /> : children}
     </Button>
   );
 }

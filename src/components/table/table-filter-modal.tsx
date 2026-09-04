@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
+import { LoadingButton } from "@/components/form/loading-button";
+import { useTableLoadingState } from "@/components/table/table-loading-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,6 +35,9 @@ export function TableFilterModal({
   activeCount = 0,
   children,
 }: TableFilterModalProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const tableLoading = useTableLoadingState();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,7 +59,26 @@ export function TableFilterModal({
           action={action}
           className="space-y-5"
           aria-busy={submitting}
-          onSubmit={() => setSubmitting(true)}
+          onSubmit={(event) => {
+            event.preventDefault();
+            setSubmitting(true);
+
+            const formData = new FormData(event.currentTarget);
+            const params = new URLSearchParams();
+
+            for (const [key, value] of formData.entries()) {
+              if (typeof value !== "string") continue;
+              const trimmedValue = value.trim();
+              if (!trimmedValue || trimmedValue === "all") continue;
+              params.append(key, trimmedValue);
+            }
+
+            const actionPath = action || pathname;
+            const href = `${actionPath}${params.toString() ? `?${params.toString()}` : ""}`;
+            tableLoading?.startLoading(href);
+            setOpen(false);
+            router.push(href, { scroll: false });
+          }}
         >
           <div className="grid gap-4">{children}</div>
           <DialogFooter>
@@ -65,11 +90,9 @@ export function TableFilterModal({
             >
               <ActionLabel action="cancel">Batal</ActionLabel>
             </Button>
-            <Button type="submit" disabled={submitting}>
-              <ActionLabel action="submit">
-                {submitting ? "Menerapkan..." : submitLabel}
-              </ActionLabel>
-            </Button>
+            <LoadingButton type="submit" loading={submitting} loadingLabel="Menerapkan...">
+              <ActionLabel action="submit">{submitLabel}</ActionLabel>
+            </LoadingButton>
           </DialogFooter>
         </form>
       </DialogContent>

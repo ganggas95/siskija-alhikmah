@@ -30,6 +30,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  TableLoadingLink,
+  TableLoadingState,
+} from "@/components/table/table-loading-state";
 import type { QueryValue } from "@/lib/table-query";
 import { buildQueryString } from "@/lib/table-query";
 import { formatRupiah } from "@/lib/money";
@@ -78,7 +82,10 @@ export function AnnualBillsMatrix({
   })}`;
 
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <TableLoadingState
+      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      overlayLabel="Memuat matriks tagihan..."
+    >
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-slate-900">Matriks Tagihan Tahunan</h3>
@@ -93,10 +100,10 @@ export function AnnualBillsMatrix({
           aria-label="Perbesar matriks tagihan"
           asChild
         >
-          <Link href={fullscreenHref} scroll={false}>
+          <TableLoadingLink href={fullscreenHref} scroll={false}>
             <span className="sr-only">Perbesar matriks tagihan</span>
             <Expand className="h-4 w-4" />
-          </Link>
+          </TableLoadingLink>
         </Button>
         <Dialog
           open={isFullscreen}
@@ -150,7 +157,7 @@ export function AnnualBillsMatrix({
         mode="embedded"
         hasAnyRows={hasAnyRows}
       />
-    </div>
+    </TableLoadingState>
   );
 }
 
@@ -202,12 +209,12 @@ function AnnualBillsMatrixContent({
 
               return (
                 <TabsTrigger key={tab.key} value={tab.key} asChild className="px-3 py-2">
-                  <Link href={href} scroll={false}>
+                  <TableLoadingLink href={href} scroll={false}>
                     <span>{tab.label}</span>
                     <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-700">
                       {tab.totalHouseholds}
                     </span>
-                  </Link>
+                  </TableLoadingLink>
                 </TabsTrigger>
               );
             })}
