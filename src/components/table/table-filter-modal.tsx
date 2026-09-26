@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { LoadingButton } from "@/components/form/loading-button";
@@ -38,8 +38,15 @@ export function TableFilterModal({
   const pathname = usePathname();
   const router = useRouter();
   const tableLoading = useTableLoadingState();
+  const tableIsLoading = tableLoading?.isLoading ?? false;
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!tableIsLoading) {
+      setSubmitting(false);
+    }
+  }, [tableIsLoading]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
