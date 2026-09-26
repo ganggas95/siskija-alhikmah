@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 type ExportPaymentModalProps = {
   query?: string;
   regionId?: string;
+  rt?: string;
   status?: string;
   disability?: string;
   elderly?: string;
@@ -30,6 +31,7 @@ type ExportPaymentModalProps = {
 export function ExportPaymentModal({
   query,
   regionId,
+  rt,
   status,
   disability,
   elderly,
@@ -49,6 +51,7 @@ export function ExportPaymentModal({
     params.set("year", String(formData.get("year") ?? ""));
     if (query) params.set("q", query);
     if (regionId) params.set("regionId", regionId);
+    if (rt) params.set("rt", rt);
     if (status) params.set("status", status);
     if (disability) params.set("disability", disability);
     if (elderly) params.set("elderly", elderly);
@@ -111,6 +114,7 @@ export function ExportPaymentModal({
         <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isLoading}>
           {query ? <input type="hidden" name="q" value={query} /> : null}
           {regionId ? <input type="hidden" name="regionId" value={regionId} /> : null}
+          {rt ? <input type="hidden" name="rt" value={rt} /> : null}
           {status ? <input type="hidden" name="status" value={status} /> : null}
           {disability ? <input type="hidden" name="disability" value={disability} /> : null}
           {elderly ? <input type="hidden" name="elderly" value={elderly} /> : null}
