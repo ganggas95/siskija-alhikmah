@@ -3,6 +3,7 @@ import { HouseholdStatus, Prisma } from "@prisma/client";
 export type HouseholdFilterInput = {
   query?: string;
   regionId?: string;
+  rt?: string;
   status?: string;
   disability?: string;
   elderly?: string;
@@ -11,6 +12,7 @@ export type HouseholdFilterInput = {
 export function buildHouseholdWhere({
   query,
   regionId,
+  rt,
   status,
   disability,
   elderly,
@@ -30,6 +32,7 @@ export function buildHouseholdWhere({
         }
       : {}),
     ...(regionId && regionId !== "all" ? { regionId } : {}),
+    ...(rt && rt !== "all" ? { rt: { equals: rt, mode: "insensitive" } } : {}),
     ...(status === "active"
       ? { status: HouseholdStatus.ACTIVE }
       : status === "inactive"

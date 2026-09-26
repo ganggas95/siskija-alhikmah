@@ -37,6 +37,7 @@ export default async function HouseholdPage({
   const resolvedSearchParams = await resolveSearchParams(searchParams);
   const query = getQueryParam(resolvedSearchParams, "q");
   const regionIdFilter = getQueryParam(resolvedSearchParams, "regionId");
+  const rtFilter = getQueryParam(resolvedSearchParams, "rt");
   const statusFilter = getQueryParam(resolvedSearchParams, "status");
   const disabilityFilter = getQueryParam(resolvedSearchParams, "disability");
   const elderlyFilter = getQueryParam(resolvedSearchParams, "elderly");
@@ -48,6 +49,7 @@ export default async function HouseholdPage({
   
   const activeFilterCount = [
     regionIdFilter,
+    rtFilter,
     statusFilter,
     disabilityFilter,
     elderlyFilter,
@@ -56,6 +58,7 @@ export default async function HouseholdPage({
   const where: Prisma.HouseholdWhereInput = buildHouseholdWhere({
     query,
     regionId: regionIdFilter,
+    rt: rtFilter,
     status: statusFilter,
     disability: disabilityFilter,
     elderly: elderlyFilter,
@@ -94,6 +97,7 @@ export default async function HouseholdPage({
                 <ExportPaymentModal
                   query={query}
                   regionId={regionIdFilter}
+                  rt={rtFilter}
                   status={statusFilter}
                   disability={disabilityFilter}
                   elderly={elderlyFilter}
@@ -116,6 +120,7 @@ export default async function HouseholdPage({
                   className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
                 />
                 {regionIdFilter ? <input type="hidden" name="regionId" value={regionIdFilter} /> : null}
+                {rtFilter ? <input type="hidden" name="rt" value={rtFilter} /> : null}
                 {statusFilter ? <input type="hidden" name="status" value={statusFilter} /> : null}
                 {disabilityFilter ? <input type="hidden" name="disability" value={disabilityFilter} /> : null}
                 {elderlyFilter ? <input type="hidden" name="elderly" value={elderlyFilter} /> : null}
@@ -130,6 +135,17 @@ export default async function HouseholdPage({
                   activeCount={activeFilterCount}
                 >
                   {query ? <input type="hidden" name="q" value={query} /> : null}
+                  <div className="space-y-2">
+                    <label htmlFor="household-filter-rt" className="text-sm font-medium text-slate-700">RT</label>
+                    <input
+                      id="household-filter-rt"
+                      name="rt"
+                      defaultValue={rtFilter || ""}
+                      placeholder="Contoh: 001"
+                      inputMode="numeric"
+                      className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Wilayah</label>
                     <select

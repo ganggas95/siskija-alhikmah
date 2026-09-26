@@ -53,7 +53,7 @@ describe("GET /api/jamaah/export-pembayaran", () => {
 
     const response = await GET(
       new Request(
-        "http://localhost/api/jamaah/export-pembayaran?year=2026&regionId=region-1&status=active",
+        "http://localhost/api/jamaah/export-pembayaran?year=2026&regionId=region-1&rt=001&status=active",
       ),
     );
 
@@ -67,6 +67,7 @@ describe("GET /api/jamaah/export-pembayaran", () => {
     expect(mocks.rows).toHaveBeenCalledWith({
       year: 2026,
       regionId: "region-1",
+      rt: "001",
       status: "active",
       query: undefined,
       disability: undefined,
